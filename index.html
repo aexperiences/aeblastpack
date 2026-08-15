@@ -1,0 +1,766 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#FDF9F0"><title>AE Blastpack</title><link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png"><link rel="icon" href="./icon-180.png"><link rel="manifest" href="./manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Blastpack"><style>:root{--sm-bg:#FDF9F0;--sm-card:#FFFFFF;--sm-ink:#1C3D4F;--sm-mut:#5E6D73;--sm-line:#E4DAC4;--sm-primary:#1C3D4F;--sm-primary-d:#17323f;--sm-primary-soft:#e2e0d9;--sm-accent:#F0A3A9;--sm-accent-d:#c5868b;--sm-accent-soft:#fcf0e9;--sm-on-primary:#ffffff;--sm-on-accent:#12161c;--sm-good:#3C7C53;--sage:#7BAEA6;--ease-out:cubic-bezier(.22,.61,.36,1);--ease-spring:cubic-bezier(.34,1.56,.64,1)}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body,html{height:100%}body{margin:0;background:var(--sm-bg);color:var(--sm-ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;overscroll-behavior-y:none;transition:background .35s var(--ease-out),color .35s var(--ease-out);padding-bottom:env(safe-area-inset-bottom)}button{font:inherit;color:inherit;cursor:pointer}.app{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}.bar{position:sticky;top:0;z-index:40;background:rgba(8,11,13,.74);-webkit-backdrop-filter:saturate(160%) blur(18px);backdrop-filter:saturate(160%) blur(18px);border-bottom:1px solid rgba(255,255,255,.12);box-shadow:0 1px 0 rgba(0,0,0,.25),0 8px 24px rgba(0,0,0,.16);padding:calc(9px + env(safe-area-inset-top)) 14px 9px;display:flex;align-items:center;gap:10px;color:#fdf9f0}@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.bar{background:rgba(10,14,16,.92)}}.wsbtn{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.22);border-radius:99px;padding:5px 13px 5px 6px;font-weight:800;font-size:14px;min-height:40px;color:#fdf9f0;transition:transform .12s var(--ease-out),background .2s}.wsbtn:hover{background:rgba(255,255,255,.16)}.wsbtn:active{transform:scale(.96)}.wsdot{width:26px;height:26px;border-radius:99px;flex:none;border:2px solid var(--sm-ink);display:grid;place-items:center;font-size:11px;font-weight:900;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35)}.bar .wsdot{border-color:rgba(255,255,255,.55)}.wsbtn .caret{opacity:.7;font-size:11px}.bar .grow{flex:1}.wsbtn{border-width:2px}.wsname{max-width:34vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.quick{display:flex;align-items:center;gap:-6px;padding-right:2px}.qdot{width:34px;height:34px;border-radius:99px;border:2.5px solid rgba(255,255,255,.5);margin-left:-9px;font-weight:900;font-size:11px;color:#fff;display:grid;place-items:center;transition:transform .18s var(--ease-spring),margin-left .18s var(--ease-out);box-shadow:0 1px 4px #0002}.qdot:first-child{margin-left:0}.haslogo{overflow:hidden;padding:0}.haslogo img{width:100%;height:100%;object-fit:cover;display:block}.quick:active .qdot,.quick:hover .qdot{margin-left:2px}.qdot:active{transform:scale(.88)}.qdot.add,.qdot.more{background:rgba(255,255,255,.14);color:#fdf9f0;border-color:rgba(255,255,255,.3)}.sweep{position:fixed;inset:0;z-index:70;pointer-events:none;opacity:0}.sweep.run{animation:sweep .52s var(--ease-out) forwards}@keyframes sweep{0%{opacity:0;clip-path:circle(0% at 22% 4%)}35%{opacity:.92}100%{opacity:0;clip-path:circle(150% at 22% 4%)}}.wsflash{position:fixed;left:50%;top:calc(58px + env(safe-area-inset-top));transform:translateX(-50%) scale(.9);z-index:71;pointer-events:none;background:var(--sm-ink);color:var(--sm-bg);border-radius:99px;padding:9px 18px;font-weight:800;font-size:14px;display:flex;align-items:center;gap:9px;opacity:0;transition:opacity .2s,transform .3s var(--ease-spring);box-shadow:0 8px 24px #0004}.wsflash.on{opacity:1;transform:translateX(-50%) scale(1)}.wsflash i{width:18px;height:18px;border-radius:99px;display:block}.iconbtn{background:0 0;border:0;padding:8px;border-radius:12px;min-width:40px;min-height:40px;display:grid;place-items:center;opacity:.9;color:#fdf9f0;font-size:17px}.iconbtn:active{background:rgba(255,255,255,.16)}.pane{padding:16px 14px 26px;flex:1;animation:rise .28s var(--ease-out)}@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}h1{font:800 27px/1.15 Georgia,serif;margin:0 0 5px}h2{font:800 19px/1.2 Georgia,serif;margin:26px 0 9px}.lede{color:var(--sm-mut);margin:0 0 18px;font-size:14.5px}.lab{font-size:10.5px;letter-spacing:.12em;font-weight:800;color:var(--sm-mut);margin:0 0 8px}.card{background:var(--sm-card);border:1.5px solid var(--sm-line);border-radius:18px;padding:15px}.card+.card{margin-top:10px}.btn{display:block;width:100%;text-align:center;border:2.5px solid var(--sm-ink);background:var(--sm-accent);color:var(--sm-on-accent);border-radius:15px;padding:15px;font-weight:800;font-size:16.5px;transition:transform .12s var(--ease-out),opacity .2s}.btn:active{transform:scale(.975)}.btn[disabled]{opacity:.45;pointer-events:none}.btn.ghost{background:0 0;color:var(--sm-ink);border-color:var(--sm-line);font-size:15px;padding:13px}.btn.solid{background:var(--sm-primary);color:var(--sm-on-primary);border-color:var(--sm-primary)}.row{display:flex;align-items:center;gap:10px}.mut{color:var(--sm-mut)}.tiny{font-size:12px}.pill{display:inline-block;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:800}.hr{height:1.5px;background:var(--sm-line);border:0;margin:18px 0}input[type=email],input[type=tel],input[type=text],textarea{width:100%;background:var(--sm-bg);color:var(--sm-ink);border:1.5px solid var(--sm-line);border-radius:13px;padding:12px 13px;font:inherit;font-size:15px}textarea{resize:vertical;min-height:92px;line-height:1.45}input:focus,textarea:focus{outline:2px solid var(--sm-accent);outline-offset:1px}.tabs{position:sticky;bottom:0;z-index:40;background:rgba(8,11,13,.74);-webkit-backdrop-filter:saturate(160%) blur(18px);backdrop-filter:saturate(160%) blur(18px);border-top:1px solid rgba(255,255,255,.12);box-shadow:0 -8px 24px rgba(0,0,0,.16);display:flex;padding-bottom:env(safe-area-inset-bottom)}@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.tabs{background:rgba(10,14,16,.94)}}.tab{flex:1;background:0 0;border:0;padding:11px 4px 12px;display:grid;gap:3px;justify-items:center;font-size:10.5px;font-weight:800;color:rgba(253,249,240,.58);letter-spacing:.03em;transition:color .2s var(--ease-out)}.tab .g{font-size:19px;line-height:1}.tab[aria-current=true]{color:#fdf9f0}.tab[aria-current=true] .g{transform:translateY(-1px)}.tab .badge{position:absolute;transform:translate(13px,-22px);background:var(--sm-accent);color:var(--sm-on-accent);border-radius:99px;font-size:9.5px;font-weight:900;padding:1px 5px}.drop{border:2.5px dashed var(--sm-line);border-radius:18px;background:var(--sm-primary-soft);min-height:190px;display:grid;place-items:center;text-align:center;padding:22px 16px;gap:4px;transition:border-color .2s,background .2s}.drop.has{border-style:solid;padding:0;background:#000;overflow:hidden;position:relative;min-height:0}.drop video{width:100%;display:block;max-height:340px;background:#000}.vmeta{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.62);color:#fff;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:800}.vclear{position:absolute;right:8px;top:8px;background:rgba(0,0,0,.62);color:#fff;border:0;border-radius:99px;width:30px;height:30px;font-size:15px}.drop .g{font-size:34px}.dest{display:flex;align-items:center;gap:11px;background:var(--sm-card);border:1.5px solid var(--sm-line);border-radius:14px;padding:11px 12px;margin-bottom:8px;transition:border-color .2s,opacity .2s}.dest[data-on=false]{opacity:.5}.dest[data-on=true]{border-color:var(--sm-ink)}.dest .nm{font-weight:800;font-size:14.5px}.dest .sub{font-size:11.5px;color:var(--sm-mut)}.sw{width:46px;height:27px;border-radius:99px;background:var(--sm-line);position:relative;flex:none;border:0;transition:background .22s var(--ease-out)}.sw i{position:absolute;left:3px;top:3px;width:21px;height:21px;border-radius:99px;background:#fff;transition:transform .22s var(--ease-spring);box-shadow:0 1px 3px #0003}.sw[aria-checked=true]{background:var(--sm-good)}.sw[aria-checked=true] i{transform:translateX(19px)}.glyph{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;font-weight:900;font-size:13px;color:#fff}.g-tiktok{background:#111}.g-instagram{background:linear-gradient(45deg,#f9ce34,#ee2a7b,#6228d7)}.g-facebook{background:#1877f2}.g-youtube{background:red}.g-x{background:#111}.st{margin-left:auto;font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px}.st.ok{background:var(--sm-good);color:#fff}.st.wait{background:var(--sm-primary-soft);color:var(--sm-mut)}.st.go{background:var(--sm-accent);color:var(--sm-on-accent)}.st.bad{background:#c0392b;color:#fff}.st.warn{background:#b7791f;color:#fff}.alert{background:var(--sm-card);border:1.5px solid var(--sm-line);border-left:6px solid #c0392b;border-radius:14px;padding:12px 13px;margin-bottom:9px;animation:rise .3s var(--ease-out)}.alert.warn{border-left-color:#b7791f}.alert.good{border-left-color:var(--sm-good)}.alert b{display:block;margin-bottom:2px;font-size:14px}.alert p{margin:0;font-size:13px;color:var(--sm-mut);line-height:1.45}.alert .btn{margin-top:10px;padding:10px;font-size:14px}.scrim{position:fixed;inset:0;background:#0007;z-index:60;opacity:0;pointer-events:none;transition:opacity .25s var(--ease-out);backdrop-filter:blur(2px)}.scrim.on{opacity:1;pointer-events:auto}.sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:var(--sm-bg);border-top:2.5px solid var(--sm-ink);border-radius:24px 24px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom));transform:translateY(102%);transition:transform .32s var(--ease-out);max-width:520px;margin:0 auto;max-height:88vh;overflow:auto;overscroll-behavior:contain}.sheet.on{transform:none}.grab{width:42px;height:5px;border-radius:99px;background:var(--sm-line);margin:6px auto 14px}.sheet h3{font:800 21px/1.2 Georgia,serif;margin:0 0 4px}.wsrow{display:flex;align-items:center;gap:11px;background:var(--sm-card);border:1.5px solid var(--sm-line);border-radius:15px;padding:11px 12px;margin-bottom:8px;width:100%;text-align:left}.wsrow[aria-current=true]{border-color:var(--sm-ink);border-width:2.5px}.wsrow .nm{font-weight:800;font-size:15px}.wsrow .sub{font-size:11.5px;color:var(--sm-mut)}.pvwrap{display:flex;gap:9px;overflow-x:auto;padding:2px 0 8px;scroll-snap-type:x mandatory;overscroll-behavior-x:contain}.pv{flex:none;width:132px;scroll-snap-align:start}.pv .frame{border:2px solid var(--sm-ink);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:9/16;display:grid;place-items:center;position:relative}.pv .frame.sq{aspect-ratio:1/1}.pv .ph,.pv video{width:100%;height:100%;object-fit:cover}.pv .ph{background:var(--sm-primary-soft);display:grid;place-items:center;font-size:11px;color:var(--sm-mut)}.pv .nm{font-size:11.5px;font-weight:800;margin-top:5px;display:flex;align-items:center;gap:5px}.pv .cap{font-size:10.5px;color:var(--sm-mut);margin-top:2px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.step{display:flex;gap:11px;margin-bottom:13px}.step .n{width:26px;height:26px;border-radius:99px;background:var(--sm-primary);color:var(--sm-on-primary);font-weight:900;font-size:13px;display:grid;place-items:center;flex:none}.step .t{font-size:14px;line-height:1.45}.step .t b{font-weight:800}.note{font-size:12.5px;color:var(--sm-mut);line-height:1.5;margin:8px 0 0}.foot{padding:20px 14px 26px;text-align:center;color:var(--sm-mut);font-size:11.5px;line-height:1.5}.foot img{width:26px;height:26px;vertical-align:-8px;margin-right:5px;border-radius:99px}.hide{display:none!important}@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}</style></head><body><div class="app" id="app"></div><div class="scrim" id="scrim"></div><div class="sheet" id="sheet"></div><script>/* =========================================================================
+   AE BLASTPACK — Accelerated Experiences LLC
+   Single file. No build step. State in localStorage so profiles persist.
+   Skins use the AE Skin Machine 8-token core contract (--sm-*).
+   ========================================================================= */
+(function () {
+'use strict';
+
+/* ---------------- skins (the only two this app offers) ---------------- */
+var SKINS = {
+  'blastpack-light': {
+    name:'Light', family:'AE Blastpack',
+    vars:{'--bg':'#FDF9F0','--card':'#FFFFFF','--ink':'#1C3D4F','--mut':'#5E6D73',
+          '--line':'#E4DAC4','--primary':'#1C3D4F','--accent':'#F0A3A9','--good':'#3C7C53'}
+  },
+  'blastpack-deep': {
+    name:'Deep', family:'AE Blastpack',
+    vars:{'--bg':'#14323F','--card':'#1C3D4F','--ink':'#FDF9F0','--mut':'#9FB4BD',
+          '--line':'#2F5567','--primary':'#7BAEA6','--accent':'#F0A3A9','--good':'#7FD4C8'}
+  }
+};
+function hx(h){h=h.replace('#','');if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function sx(a){return '#'+a.map(function(v){return Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0');}).join('');}
+function mix(a,b,t){var A=hx(a),B=hx(b);return sx([0,1,2].map(function(i){return A[i]+(B[i]-A[i])*t;}));}
+function lum(c){var r=hx(c).map(function(v){v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});
+  return 0.2126*r[0]+0.7152*r[1]+0.0722*r[2];}
+function onC(c){return lum(c)>0.42?'#12161c':'#ffffff';}
+function tokens(s){var v=s.vars;return{
+  '--sm-bg':v['--bg'],'--sm-card':v['--card'],'--sm-ink':v['--ink'],'--sm-mut':v['--mut'],'--sm-line':v['--line'],
+  '--sm-primary':v['--primary'],'--sm-primary-d':mix(v['--primary'],'#000',.18),
+  '--sm-primary-soft':mix(v['--primary'],v['--bg'],.82),
+  '--sm-accent':v['--accent'],'--sm-accent-d':mix(v['--accent'],'#000',.18),
+  '--sm-accent-soft':mix(v['--accent'],v['--bg'],.82),
+  '--sm-on-primary':onC(v['--primary']),'--sm-on-accent':onC(v['--accent']),'--sm-good':v['--good']};}
+function applySkin(id){
+  var s=SKINS[id]||SKINS['blastpack-light'], t=tokens(s);
+  for(var k in t) document.documentElement.style.setProperty(k,t[k]);
+  var m=document.querySelector('meta[name=theme-color]'); if(m) m.setAttribute('content',t['--sm-bg']);
+}
+
+/* ---------------- platforms ---------------- */
+var PLATFORMS=[
+  {id:'tiktok',   name:'TikTok',    cls:'g-tiktok',    ab:'TT', note:'Where it starts'},
+  {id:'instagram',name:'Instagram', cls:'g-instagram', ab:'IG', note:'Reels + feed'},
+  {id:'facebook', name:'Facebook',  cls:'g-facebook',  ab:'f',  note:'Your Page'},
+  {id:'youtube',  name:'YouTube',   cls:'g-youtube',   ab:'YT', note:'Shorts'},
+  {id:'x',        name:'X',         cls:'g-x',         ab:'X',  note:'Add-on'}
+];
+var P_BY={}; PLATFORMS.forEach(function(p){P_BY[p.id]=p;});
+var WS_COLORS=['#7BAEA6','#F0A3A9','#E0A83A','#8E7CC3','#5B8DEF','#C8794F','#3C7C53','#C25E3A'];
+
+/* ---------------- state ---------------- */
+var KEY='aeblastpack_v1';
+var S=null;
+function uid(){return Math.random().toString(36).slice(2,9);}
+function blankWs(name,color){
+  var c={}; PLATFORMS.forEach(function(p){c[p.id]={connected:false,handle:'',expiresInDays:null};});
+  return {id:uid(),name:name||'My brand',color:color||WS_COLORS[0],skin:'blastpack-light',
+          logo:null,connections:c,posts:[],created:Date.now()};
+}
+function fresh(){
+  return {v:1, onboarded:false, activeWs:null, workspaces:[],
+          alerts:{push:true,email:true,sms:false,phone:'',emailAddr:''}};
+}
+function load(){
+  try{var r=localStorage.getItem(KEY); S=r?JSON.parse(r):fresh();}catch(e){S=fresh();}
+  if(!S||typeof S!=='object') S=fresh();
+  if(!S.workspaces) S.workspaces=[];
+  if(!S.alerts) S.alerts=fresh().alerts;
+}
+function save(){ try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){} }
+function ws(){ return S.workspaces.filter(function(w){return w.id===S.activeWs;})[0]||S.workspaces[0]||null; }
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+/* ---------------- draft (not persisted — video blobs don't belong in storage) ------- */
+var draft={file:null,url:null,dur:null,caption:'',overrides:{},dests:{}};
+function resetDraft(){
+  if(draft.url) URL.revokeObjectURL(draft.url);
+  draft={file:null,url:null,dur:null,caption:'',overrides:{},dests:{}};
+  var w=ws(); if(w) PLATFORMS.forEach(function(p){ draft.dests[p.id]=!!w.connections[p.id].connected; });
+}
+
+/* ---------------- routing ---------------- */
+var route='home';
+function go(r){ route=r; render(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+/* ---------------- sheet ---------------- */
+var scrim=document.getElementById('scrim'), sheet=document.getElementById('sheet');
+function openSheet(html){ sheet.innerHTML='<div class="grab"></div>'+html;
+  scrim.classList.add('on'); sheet.classList.add('on'); }
+function closeSheet(){ scrim.classList.remove('on'); sheet.classList.remove('on'); }
+scrim.addEventListener('click',closeSheet);
+
+/* ---------------- helpers ---------------- */
+function connectedCount(w){ return PLATFORMS.filter(function(p){return w.connections[p.id].connected;}).length; }
+function expiring(w){ return PLATFORMS.filter(function(p){
+  var c=w.connections[p.id]; return c.connected && c.expiresInDays!=null && c.expiresInDays<=3; }); }
+function failedPosts(w){ return (w.posts||[]).filter(function(p){
+  return Object.keys(p.results||{}).some(function(k){return p.results[k]==='failed';}); }); }
+function fmtWhen(t){
+  var d=Math.floor((Date.now()-t)/1000);
+  if(d<60) return 'just now';
+  if(d<3600) return Math.floor(d/60)+' min ago';
+  if(d<86400) return Math.floor(d/3600)+' hr ago';
+  return new Date(t).toLocaleDateString();
+}
+function initials(n){ return (n||'?').trim().slice(0,2).toUpperCase(); }
+
+/* one avatar renderer everywhere: real logo if there is one, initials if not */
+function avatar(w, cls, extra){
+  var st='background:'+w.color+';'+(extra||'');
+  if(w.logo) return '<span class="'+cls+' haslogo" style="'+st+'"><img src="'+w.logo+'" alt=""></span>';
+  return '<span class="'+cls+'" style="'+st+'">'+esc(initials(w.name))+'</span>';
+}
+
+/* downscale any image to a small square data URL so profiles stay light in storage */
+function readLogo(file, cb){
+  var fr=new FileReader();
+  fr.onload=function(){
+    var img=new Image();
+    img.onload=function(){
+      var S2=160, c=document.createElement('canvas'); c.width=S2; c.height=S2;
+      var x=c.getContext('2d');
+      var side=Math.min(img.width,img.height);
+      x.drawImage(img,(img.width-side)/2,(img.height-side)/2,side,side,0,0,S2,S2);
+      cb(c.toDataURL('image/png'));
+    };
+    img.onerror=function(){ cb(null); };
+    img.src=fr.result;
+  };
+  fr.onerror=function(){ cb(null); };
+  fr.readAsDataURL(file);
+}
+
+/* =======================================================================
+   VIEWS
+   ======================================================================= */
+var app=document.getElementById('app');
+
+function topBar(){
+  var w=ws(); if(!w) return '';
+  var others=S.workspaces.filter(function(x){return x.id!==w.id;});
+  var inline=others.slice(0,3), rest=others.length-inline.length;
+  var h='<div class="bar">'
+    + '<button class="wsbtn" data-act="wsopen" style="border-color:'+w.color+'">'
+    +   avatar(w,'wsdot')
+    +   '<span class="wsname">'+esc(w.name)+'</span><span class="caret">&#9660;</span>'
+    + '</button>'
+    + '<span class="grow"></span>';
+  if(others.length){
+    h+='<div class="quick">';
+    inline.forEach(function(x){
+      h+='<button class="qdot'+(x.logo?' haslogo':'')+'" data-act="switch" data-id="'+x.id+'" title="'+esc(x.name)+'" '
+        +'style="background:'+x.color+'">'+(x.logo?'<img src="'+x.logo+'" alt="">':esc(initials(x.name)))+'</button>';
+    });
+    if(rest>0) h+='<button class="qdot more" data-act="wsopen">+'+rest+'</button>';
+    h+='</div>';
+  } else {
+    h+='<button class="qdot add" data-act="newws" title="Add a profile">+</button>';
+  }
+  h+='<button class="iconbtn" data-act="skin" title="Light or Deep">'
+    + (S.skinIsDeep?'&#9789;':'&#9788;')+'</button></div>';
+  return h;
+}
+
+function tabs(){
+  var w=ws(); if(!w) return '';
+  var f=failedPosts(w).length, e=expiring(w).length, alerts=f+e;
+  function t(id,g,label,badge){
+    return '<button class="tab" data-act="go" data-r="'+id+'" aria-current="'+(route===id)+'">'
+      + (badge?'<span class="badge">'+badge+'</span>':'')
+      + '<span class="g">'+g+'</span>'+label+'</button>';
+  }
+  return '<div class="tabs">'
+    + t('home','&#9650;','Post')
+    + t('queue','&#9634;','Activity',alerts||0)
+    + t('connect','&#9673;','Accounts')
+    + t('settings','&#9881;','Settings')
+    + '</div>';
+}
+
+/* ---------------- onboarding ---------------- */
+function vOnboard(){
+  return '<div class="pane">'
+  + '<div style="text-align:center;margin:14px 0 22px">'
+  +   '<img src="./icon-180.png" alt="" style="width:112px;border-radius:26%;border:5px solid var(--sm-ink)">'
+  +   '<h1 style="margin-top:16px;font-size:32px">AE Blastpack</h1>'
+  +   '<p class="lede" style="margin-bottom:0">Make it in TikTok like you always do. One tap sends it everywhere else.</p>'
+  + '</div>'
+  + '<div class="card"><p class="lab">SET THIS ONCE, IN TIKTOK</p>'
+  +   '<div class="step"><span class="n">1</span><span class="t">Open TikTok and make your video the way you always do.</span></div>'
+  +   '<div class="step"><span class="n">2</span><span class="t">On the <b>Post</b> screen, tap <b>More options</b>.</span></div>'
+  +   '<div class="step"><span class="n">3</span><span class="t">Turn <b>Save to device</b> <b>ON</b>, then post.</span></div>'
+  +   '<p class="note">TikTok remembers that switch. From now on every video you post also lands in your camera roll &mdash; a clean copy with no watermark. That matters: Instagram won&rsquo;t recommend Reels with a visible watermark.</p>'
+  + '</div>'
+  + '<h2>Name your first profile</h2>'
+  + '<p class="lede">One profile per brand or business. You can add more any time, and switching takes two taps.</p>'
+  + '<div class="card">'
+  +   '<input type="text" id="wsname" placeholder="e.g. Home Health Nurse" autocomplete="off">'
+  +   '<p class="lab" style="margin:14px 0 8px">PICK A COLOUR</p>'
+  +   '<div class="row" id="wscolors" style="flex-wrap:wrap;gap:8px">'
+  +     WS_COLORS.map(function(c,i){return '<button data-act="pickcolor" data-c="'+c+'"'
+  +       ' style="width:36px;height:36px;border-radius:99px;background:'+c
+  +       ';border:'+(i===0?'3.5px':'2px')+' solid var(--sm-ink)"></button>';}).join('')
+  +   '</div>'
+  +   '<p class="note">The colour is how you tell profiles apart at a glance &mdash; so you never post to the wrong one.</p>'
+  + '</div>'
+  + '<div style="height:16px"></div>'
+  + '<button class="btn" data-act="createfirst">Create profile &rarr;</button>'
+  + '</div>';
+}
+
+/* ---------------- home / composer ---------------- */
+function vHome(){
+  var w=ws(), h='';
+  var conn=connectedCount(w);
+  h+='<div class="pane">';
+
+  var exps=expiring(w), fails=failedPosts(w);
+  if(fails.length){
+    h+='<div class="alert"><b>A post didn&rsquo;t go out.</b>'
+      +'<p>'+fails.length+' post'+(fails.length>1?'s':'')+' had a destination fail. Silence means it worked &mdash; this is not silence.</p>'
+      +'<button class="btn" data-act="go" data-r="queue">See what failed</button></div>';
+  }
+  exps.forEach(function(p){
+    var c=w.connections[p.id];
+    h+='<div class="alert warn"><b>'+esc(p.name)+' expires in '+c.expiresInDays+' day'+(c.expiresInDays===1?'':'s')+'.</b>'
+      +'<p>Renew it now and your queue keeps running. If it lapses, posts stop going out quietly.</p>'
+      +'<button class="btn ghost" data-act="renew" data-p="'+p.id+'">Renew '+esc(p.name)+'</button></div>';
+  });
+
+  if(conn===0){
+    h+='<div class="card" style="text-align:center">'
+      +'<p class="lab">NOTHING CONNECTED YET</p>'
+      +'<p style="margin:0 0 13px;font-size:14.5px">Hook up your accounts and this screen becomes one button.</p>'
+      +'<button class="btn" data-act="go" data-r="connect">Connect your accounts</button></div>';
+  }
+
+  h+='<p class="lab" style="margin-top:'+(conn===0?'20px':'0')+'">YOUR VIDEO</p>';
+  if(draft.url){
+    h+='<div class="drop has">'
+      +'<video src="'+draft.url+'" playsinline muted controls preload="metadata"></video>'
+      +'<button class="vclear" data-act="clearvid" aria-label="Remove">&times;</button>'
+      +'<span class="vmeta" id="vmeta">'+(draft.dur?fmtDur(draft.dur):'video')+'</span>'
+      +'</div>';
+  } else {
+    h+='<button class="drop" data-act="pick" style="width:100%;border-width:2.5px">'
+      +'<span class="g">&#8679;</span>'
+      +'<b style="font-size:16px">Add the video</b>'
+      +'<span class="tiny mut">Pick the newest one from your camera roll</span>'
+      +'</button>';
+  }
+  h+='<input type="file" id="file" accept="video/*" class="hide">';
+
+  h+='<p class="lab" style="margin-top:18px">CAPTION</p>'
+    +'<textarea id="cap" placeholder="What&rsquo;s this one about?">'+esc(draft.caption)+'</textarea>'
+    +'<p class="note">One caption for all of them. Tap a platform below to word that one differently.</p>';
+
+  h+='<p class="lab" style="margin-top:18px">SENDING TO</p>';
+  PLATFORMS.forEach(function(p){
+    var c=w.connections[p.id], on=!!draft.dests[p.id];
+    if(!c.connected){
+      h+='<div class="dest" data-on="false">'
+        +'<span class="glyph '+p.cls+'">'+p.ab+'</span>'
+        +'<span><span class="nm">'+p.name+'</span><br><span class="sub">not connected</span></span>'
+        +'<button class="st wait" data-act="go" data-r="connect" style="margin-left:auto;border:0">Connect</button>'
+        +'</div>';
+    } else {
+      var ov=draft.overrides[p.id];
+      h+='<div class="dest" data-on="'+on+'">'
+        +'<span class="glyph '+p.cls+'">'+p.ab+'</span>'
+        +'<span style="flex:1"><span class="nm">'+p.name+'</span><br>'
+        +'<button class="sub" data-act="override" data-p="'+p.id+'" style="background:transparent;border:0;padding:0;text-decoration:underline">'
+        +(ov?'own caption &#9998;':'edit caption')+'</button></span>'
+        +'<button class="sw" role="switch" aria-checked="'+on+'" data-act="toggle" data-p="'+p.id+'"><i></i></button>'
+        +'</div>';
+    }
+  });
+
+  var picked=PLATFORMS.filter(function(p){return draft.dests[p.id]&&w.connections[p.id].connected;});
+  if(draft.url && picked.length){
+    h+='<p class="lab" style="margin-top:18px">HOW IT WILL LOOK</p><div class="pvwrap">';
+    picked.forEach(function(p){
+      var sq=(p.id==='facebook'||p.id==='x');
+      var cap=draft.overrides[p.id]!=null?draft.overrides[p.id]:draft.caption;
+      h+='<div class="pv"><div class="frame'+(sq?' sq':'')+'">'
+        +'<video src="'+draft.url+'" muted playsinline preload="metadata"></video></div>'
+        +'<div class="nm"><span class="glyph '+p.cls+'" style="width:16px;height:16px;font-size:8px;border-radius:5px">'+p.ab+'</span>'+p.name+'</div>'
+        +'<div class="cap">'+(cap?esc(cap):'<i>no caption</i>')+'</div></div>';
+    });
+    h+='</div><p class="note">9:16 stays 9:16. Nothing gets squashed into a square without you seeing it first.</p>';
+  }
+
+  var ready=!!draft.url && picked.length>0;
+  h+='<div style="height:18px"></div>'
+    +'<button class="btn" data-act="blast" '+(ready?'':'disabled')+'>'
+    +(ready?('Blast it to '+picked.length+' &rarr;'):'Add a video to blast')+'</button>'
+    +'<p class="note" style="text-align:center">We&rsquo;ll tell you the second one of them fails.</p>';
+
+  h+='</div>';
+  return h;
+}
+function fmtDur(s){ s=Math.round(s); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+
+/* ---------------- activity / queue ---------------- */
+function vQueue(){
+  var w=ws(), h='<div class="pane"><h1>Activity</h1>'
+    +'<p class="lede">Every post, and exactly where it landed. No silent failures.</p>';
+  var exps=expiring(w);
+  exps.forEach(function(p){
+    var c=w.connections[p.id];
+    h+='<div class="alert warn"><b>'+esc(p.name)+' expires in '+c.expiresInDays+' day'+(c.expiresInDays===1?'':'s')+'.</b>'
+      +'<p>Renew before it lapses. This is the warning nobody else sends.</p>'
+      +'<button class="btn ghost" data-act="renew" data-p="'+p.id+'">Renew now</button></div>';
+  });
+  if(!w.posts.length){
+    h+='<div class="card" style="text-align:center"><p class="lab">NOTHING YET</p>'
+      +'<p style="margin:0;font-size:14.5px" class="mut">When you blast something it shows up here with a line per destination.</p></div>';
+  }
+  w.posts.slice().reverse().forEach(function(post){
+    var anyFail=Object.keys(post.results).some(function(k){return post.results[k]==='failed';});
+    h+='<div class="card" style="margin-bottom:10px">'
+      +'<div class="row"><b style="font-size:14px">'+fmtWhen(post.at)+'</b>'
+      +'<span class="st '+(anyFail?'bad':'ok')+'" style="margin-left:auto">'
+      +(anyFail?'needs you':'all good')+'</span></div>'
+      +'<p style="margin:7px 0 11px;font-size:13.5px">'+(post.caption?esc(post.caption):'<i class="mut">no caption</i>')+'</p>';
+    Object.keys(post.results).forEach(function(pid){
+      var st=post.results[pid], p=P_BY[pid];
+      var cls=st==='ok'?'ok':(st==='failed'?'bad':'wait');
+      var txt=st==='ok'?'posted':(st==='failed'?'failed':'sending&hellip;');
+      h+='<div class="row" style="margin-bottom:6px">'
+        +'<span class="glyph '+p.cls+'" style="width:24px;height:24px;font-size:10px;border-radius:7px">'+p.ab+'</span>'
+        +'<span style="font-size:13.5px;font-weight:700">'+p.name+'</span>'
+        +'<span class="st '+cls+'" style="margin-left:auto">'+txt+'</span>'
+        +(st==='failed'?'<button class="st go" data-act="retry" data-id="'+post.id+'" data-p="'+pid+'" style="border:0">Retry</button>':'')
+        +'</div>';
+    });
+    if(anyFail) h+='<p class="note">We alerted you the moment this happened &mdash; push'
+      +(S.alerts.email?', email':'')+(S.alerts.sms&&S.alerts.phone?' and text':'')+'.</p>';
+    h+='</div>';
+  });
+  return h+'</div>';
+}
+
+/* ---------------- connections ---------------- */
+function vConnect(){
+  var w=ws();
+  var h='<div class="pane"><h1>Accounts</h1>'
+    +'<p class="lede">Connected once, saved to <b>'+esc(w.name)+'</b>. Each one is a login and an approve.</p>';
+
+  PLATFORMS.forEach(function(p){
+    var c=w.connections[p.id];
+    h+='<div class="card" style="margin-bottom:10px"><div class="row">'
+      +'<span class="glyph '+p.cls+'">'+p.ab+'</span>'
+      +'<span style="flex:1"><b style="font-size:15.5px">'+p.name+'</b><br>'
+      +'<span class="tiny mut">'+(c.connected?esc(c.handle||'connected'):p.note)+'</span></span>'
+      +(c.connected
+        ? '<span class="st ok">on</span>'
+        : '<button class="st go" data-act="connect" data-p="'+p.id+'" style="border:0;padding:7px 14px;font-size:12.5px">Connect</button>')
+      +'</div>';
+    if(c.connected && c.expiresInDays!=null && c.expiresInDays<=3){
+      h+='<p class="note" style="color:#B7791F;font-weight:700">Expires in '+c.expiresInDays+' day'+(c.expiresInDays===1?'':'s')
+        +' &mdash; <button data-act="renew" data-p="'+p.id+'" style="background:0;border:0;padding:0;text-decoration:underline;font-weight:800">renew</button></p>';
+    }
+    if(!c.connected) h+='<p class="note">'+helpFor(p.id)+'</p>';
+    if(c.connected) h+='<p class="note"><button data-act="disconnect" data-p="'+p.id+'" style="background:0;border:0;padding:0;text-decoration:underline">Disconnect</button></p>';
+    h+='</div>';
+  });
+
+  h+='<h2>The one thing to set in TikTok</h2><div class="card">'
+    +'<div class="step"><span class="n">&#10003;</span><span class="t">TikTok &rarr; <b>Post</b> screen &rarr; <b>More options</b> &rarr; <b>Save to device: ON</b></span></div>'
+    +'<p class="note">One time, and TikTok remembers. Every video you post lands in your camera roll clean, with no watermark. Saving it later from your profile stamps the watermark on &mdash; and Instagram won&rsquo;t recommend Reels that carry one.</p>'
+    +'</div>';
+  return h+'</div>';
+}
+function helpFor(id){
+  if(id==='instagram') return 'Instagram must be a <b>Professional</b> account &mdash; Business or Creator, and it&rsquo;s free. In Instagram: Settings &rarr; Account type and tools &rarr; Switch to professional. Personal accounts can&rsquo;t be posted to by any app.';
+  if(id==='facebook')  return 'Facebook only allows posting to a <b>Page</b>, never a personal profile. You&rsquo;ll pick which Page after logging in.';
+  if(id==='youtube')   return 'Sign in with Google and choose the channel. Vertical video lands as a Short on its own.';
+  if(id==='x')         return 'X is the only platform that charges per post, so it&rsquo;s an add-on rather than included.';
+  return 'Log in and approve. Takes about a minute.';
+}
+
+/* ---------------- settings ---------------- */
+function vSettings(){
+  var w=ws(), a=S.alerts;
+  var h='<div class="pane"><h1>Settings</h1>';
+
+  h+='<p class="lab">LOOK</p><div class="card"><div class="row">'
+    +'<span style="flex:1"><b>Skin</b><br><span class="tiny mut">Light or Deep. That&rsquo;s the whole choice.</span></span>'
+    +'</div><div class="row" style="margin-top:11px;gap:8px">'
+    + Object.keys(SKINS).map(function(k){
+        var on=(w.skin===k);
+        return '<button class="btn '+(on?'solid':'ghost')+'" data-act="setskin" data-k="'+k+'" style="padding:11px;font-size:14px">'
+          + SKINS[k].name + (on?' &#10003;':'') + '</button>';
+      }).join('')
+    +'</div><p class="note">Each profile remembers its own skin, so you can see which brand you&rsquo;re in from across the room.</p></div>';
+
+  h+='<h2>When something fails</h2><div class="card">';
+  [['push','Push notification','Free. Nothing to give us.'],
+   ['email','Email','Goes to the address you signed up with.'],
+   ['sms','Text message','Optional. Only if you add a number.']].forEach(function(r){
+    h+='<div class="dest" data-on="'+(!!a[r[0]])+'" style="margin-bottom:8px">'
+      +'<span style="flex:1"><span class="nm">'+r[1]+'</span><br><span class="sub">'+r[2]+'</span></span>'
+      +'<button class="sw" role="switch" aria-checked="'+(!!a[r[0]])+'" data-act="alert" data-k="'+r[0]+'"><i></i></button>'
+      +'</div>';
+  });
+  if(a.sms){
+    h+='<input type="tel" id="phone" placeholder="Mobile number for alerts" value="'+esc(a.phone)+'">'
+      +'<p class="note"><b>Used for alerts only.</b> Never sold, never used for marketing, never handed to the platforms. Turn this off and the number is deleted.</p>';
+  } else {
+    h+='<p class="note">A phone number is <b>never required</b>. Push and email cover it.</p>';
+  }
+  h+='</div>';
+
+  h+='<h2>Profiles</h2><div class="card">';
+  S.workspaces.forEach(function(x){
+    h+='<button class="wsrow" data-act="switch" data-id="'+x.id+'" aria-current="'+(x.id===S.activeWs)+'">'
+      + avatar(x,'wsdot')
+      +'<span style="flex:1"><span class="nm">'+esc(x.name)+'</span><br>'
+      +'<span class="sub">'+connectedCount(x)+' of 5 connected &middot; '+(x.posts.length)+' post'+(x.posts.length===1?'':'s')+'</span></span>'
+      +(x.id===S.activeWs?'<span class="st ok">here</span>':'')
+      +'</button>';
+  });
+  h+='<button class="btn ghost" data-act="newws" style="margin-top:6px">+ Add another profile</button>'
+    +'<p class="note">Agencies and anyone running more than one brand: each profile keeps its own accounts, its own history and its own alerts.</p>'
+    +'</div>';
+
+  h+='<h2>This profile</h2><div class="card">'
+    +'<div class="row" style="margin-bottom:12px">'
+    +  avatar(w,'wsdot','width:56px;height:56px;font-size:19px')
+    +  '<span style="flex:1"><b style="font-size:14.5px">Logo</b><br>'
+    +  '<span class="tiny mut">'+(w.logo?'Shows everywhere instead of initials.':'Optional. Uses initials until you add one.')+'</span></span>'
+    +  '<button class="st go" data-act="picklogo" style="border:0;padding:7px 13px">'+(w.logo?'Change':'Upload')+'</button>'
+    +'</div>'
+    + (w.logo?'<button class="btn ghost" data-act="rmlogo" style="margin-bottom:12px;padding:10px;font-size:13.5px">Remove logo</button>':'')
+    +'<input type="file" id="logofile" accept="image/*" class="hide">'
+    +'<input type="text" id="rename" value="'+esc(w.name)+'">'
+    +'<div class="row" style="flex-wrap:wrap;gap:8px;margin-top:11px">'
+    + WS_COLORS.map(function(c){return '<button data-act="wscolor" data-c="'+c+'" '
+        +'style="width:34px;height:34px;border-radius:99px;background:'+c
+        +';border:'+(w.color===c?'3.5px':'2px')+' solid var(--sm-ink)"></button>';}).join('')
+    +'</div>'
+    +'<button class="btn ghost" data-act="saveprofile" style="margin-top:12px">Save</button>'
+    + (S.workspaces.length>1
+       ? '<button class="btn ghost" data-act="delws" style="margin-top:8px;color:#C0392B">Delete this profile</button>' : '')
+    +'</div>';
+
+  h+='<div class="foot"><img src="https://aexperiences.com/ae-disc.png" alt="">'
+    +'<b>Accelerated Experiences LLC</b><br>Post Falls, Idaho &middot; an Esposito family business<br>'
+    +'<span style="opacity:.8">aexperiences.com</span></div>';
+  return h+'</div>';
+}
+
+/* =======================================================================
+   RENDER + EVENTS
+   ======================================================================= */
+function render(){
+  var w=ws();
+  if(!S.onboarded || !w){ app.innerHTML=vOnboard(); applySkin('blastpack-light'); bindOnboard(); return; }
+  applySkin(w.skin||'blastpack-light');
+  S.skinIsDeep = (w.skin==='blastpack-deep');
+  var body = route==='home'?vHome() : route==='queue'?vQueue() : route==='connect'?vConnect() : vSettings();
+  app.innerHTML = topBar() + body + tabs();
+  wire();
+}
+
+function bindOnboard(){
+  var picked=WS_COLORS[0];
+  app.addEventListener('click',function(e){
+    var b=e.target.closest('[data-act]'); if(!b) return;
+    var a=b.dataset.act;
+    if(a==='pickcolor'){
+      picked=b.dataset.c;
+      [].forEach.call(document.querySelectorAll('#wscolors button'),function(x){
+        x.style.borderWidth = (x.dataset.c===picked)?'3.5px':'2px'; });
+    }
+    if(a==='createfirst'){
+      var nm=(document.getElementById('wsname').value||'').trim()||'My brand';
+      var w=blankWs(nm,picked);
+      S.workspaces.push(w); S.activeWs=w.id; S.onboarded=true; save();
+      resetDraft(); route='connect'; render();
+    }
+  },{once:false});
+}
+
+function wire(){
+  var w=ws();
+
+  /* text fields */
+  var cap=document.getElementById('cap');
+  if(cap) cap.addEventListener('input',function(){ draft.caption=cap.value; });
+  var ph=document.getElementById('phone');
+  if(ph) ph.addEventListener('input',function(){ S.alerts.phone=ph.value; save(); });
+
+  /* logo picker */
+  var lf=document.getElementById('logofile');
+  if(lf) lf.addEventListener('change',function(){
+    var f=lf.files&&lf.files[0]; if(!f) return;
+    readLogo(f,function(url){
+      if(!url){ toast('Could not read that image.'); return; }
+      var cur=ws(); cur.logo=url; save(); render(); toast('Logo saved to '+cur.name+'.');
+    });
+  });
+
+  /* file picker */
+  var fi=document.getElementById('file');
+  if(fi) fi.addEventListener('change',function(){
+    var f=fi.files&&fi.files[0]; if(!f) return;
+    if(draft.url) URL.revokeObjectURL(draft.url);
+    draft.file=f; draft.url=URL.createObjectURL(f); draft.dur=null;
+    render();
+    var v=document.querySelector('.drop.has video');
+    if(v) v.addEventListener('loadedmetadata',function(){
+      draft.dur=v.duration;
+      var m=document.getElementById('vmeta');
+      if(m) m.textContent=fmtDur(v.duration)+' · '+(v.videoWidth>v.videoHeight?'landscape':'9:16');
+    });
+  });
+
+  app.onclick=function(e){
+    var b=e.target.closest('[data-act]'); if(!b) return;
+    var a=b.dataset.act, pid=b.dataset.p;
+
+    if(a==='go'){ go(b.dataset.r); return; }
+    if(a==='pick'){ document.getElementById('file').click(); return; }
+    if(a==='clearvid'){ if(draft.url)URL.revokeObjectURL(draft.url); draft.url=null; draft.file=null; render(); return; }
+    if(a==='toggle'){ draft.dests[pid]=!draft.dests[pid]; render(); return; }
+
+    if(a==='skin'){
+      w.skin = (w.skin==='blastpack-deep')?'blastpack-light':'blastpack-deep'; save(); render(); return;
+    }
+    if(a==='setskin'){ w.skin=b.dataset.k; save(); render(); return; }
+
+    if(a==='override'){ sheetOverride(pid); return; }
+    if(a==='wsopen'){ sheetWorkspaces(); return; }
+    if(a==='switch'){ switchTo(b.dataset.id); return; }
+    if(a==='newws'){ sheetNewWs(); return; }
+
+    if(a==='connect'){ sheetConnect(pid); return; }
+    if(a==='renew'){
+      w.connections[pid].expiresInDays=60; save(); render();
+      toast(P_BY[pid].name+' renewed. 60 days.');
+      return;
+    }
+    if(a==='disconnect'){
+      w.connections[pid]={connected:false,handle:'',expiresInDays:null};
+      draft.dests[pid]=false; save(); render(); return;
+    }
+    if(a==='alert'){
+      var k=b.dataset.k; S.alerts[k]=!S.alerts[k];
+      if(k==='sms' && !S.alerts.sms) S.alerts.phone='';
+      save(); render(); return;
+    }
+    if(a==='wscolor'){ w.color=b.dataset.c; save(); render(); return; }
+    if(a==='picklogo'){ document.getElementById('logofile').click(); return; }
+    if(a==='rmlogo'){ w.logo=null; save(); render(); toast('Logo removed.'); return; }
+    if(a==='saveprofile'){
+      var nv=(document.getElementById('rename').value||'').trim();
+      if(nv) w.name=nv;
+      save(); render(); toast('Saved.'); return;
+    }
+    if(a==='delws'){
+      if(S.workspaces.length<2) return;
+      S.workspaces=S.workspaces.filter(function(x){return x.id!==w.id;});
+      S.activeWs=S.workspaces[0].id; save(); resetDraft(); route='home'; render(); return;
+    }
+    if(a==='blast'){ blast(); return; }
+    if(a==='retry'){ retry(b.dataset.id,pid); return; }
+    if(a==='closesheet'){ closeSheet(); return; }
+  };
+}
+
+/* ---------------- sheets ---------------- */
+function sheetWorkspaces(){
+  var h='<h3>Your profiles</h3><p class="lede">Two taps to switch. Everything stays where you left it.</p>';
+  S.workspaces.forEach(function(x){
+    h+='<button class="wsrow" data-act="switch" data-id="'+x.id+'" aria-current="'+(x.id===S.activeWs)+'">'
+      +'<span class="wsdot" style="background:'+x.color+'">'+esc(initials(x.name))+'</span>'
+      +'<span style="flex:1"><span class="nm">'+esc(x.name)+'</span><br>'
+      +'<span class="sub">'+connectedCount(x)+' of 5 connected</span></span>'
+      +(x.id===S.activeWs?'<span class="st ok">here</span>':'')+'</button>';
+  });
+  h+='<button class="btn ghost" data-act="newws" style="margin-top:8px">+ Add another profile</button>';
+  openSheet(h);
+  sheet.onclick=function(e){
+    var b=e.target.closest('[data-act]'); if(!b) return;
+    if(b.dataset.act==='switch'){ closeSheet(); switchTo(b.dataset.id); }
+    if(b.dataset.act==='newws') sheetNewWs();
+  };
+}
+
+function sheetNewWs(){
+  var picked=WS_COLORS[S.workspaces.length % WS_COLORS.length];
+  var h='<h3>New profile</h3><p class="lede">A separate brand, business or client. Its own accounts, its own history, its own alerts.</p>'
+    +'<input type="text" id="nwname" placeholder="Name it" autocomplete="off">'
+    +'<p class="lab" style="margin:14px 0 8px">COLOUR</p><div class="row" id="nwcolors" style="flex-wrap:wrap;gap:8px">'
+    + WS_COLORS.map(function(c){return '<button data-c="'+c+'" style="width:36px;height:36px;border-radius:99px;background:'+c
+      +';border:'+(c===picked?'3.5px':'2px')+' solid var(--sm-ink)"></button>';}).join('')
+    +'</div>'
+    +'<p class="lab" style="margin:16px 0 8px">LOGO &mdash; OPTIONAL</p>'
+    +'<div class="row"><span class="wsdot" id="nwprev" style="width:52px;height:52px;font-size:18px;background:'+picked+'"></span>'
+    +'<button class="btn ghost" id="nwlogo" style="flex:1;padding:11px;font-size:14px">Upload a logo</button></div>'
+    +'<input type="file" id="nwlogofile" accept="image/*" class="hide">'
+    +'<div style="height:16px"></div><button class="btn" id="nwgo">Create profile</button>';
+  openSheet(h);
+  var newLogo=null;
+  var nlf=sheet.querySelector('#nwlogofile');
+  nlf.addEventListener('change',function(){
+    var f=nlf.files&&nlf.files[0]; if(!f) return;
+    readLogo(f,function(url){
+      if(!url) return;
+      newLogo=url;
+      sheet.querySelector('#nwprev').innerHTML='<img src="'+url+'" alt="">';
+      sheet.querySelector('#nwprev').classList.add('haslogo');
+    });
+  });
+  sheet.onclick=function(e){
+    if(e.target.closest('#nwlogo')){ nlf.click(); return; }
+    var c=e.target.closest('#nwcolors button');
+    if(c){ picked=c.dataset.c;
+      [].forEach.call(sheet.querySelectorAll('#nwcolors button'),function(x){
+        x.style.borderWidth=(x.dataset.c===picked)?'3.5px':'2px'; }); return; }
+    if(e.target.closest('#nwgo')){
+      var nm=(sheet.querySelector('#nwname').value||'').trim()||'New profile';
+      var nw=blankWs(nm,picked); nw.logo=newLogo; S.workspaces.push(nw); S.activeWs=nw.id; save();
+      closeSheet(); resetDraft(); route='connect'; render();
+    }
+  };
+}
+
+function sheetOverride(pid){
+  var p=P_BY[pid];
+  var cur = draft.overrides[pid]!=null?draft.overrides[pid]:draft.caption;
+  openSheet('<h3>Caption for '+p.name+'</h3>'
+    +'<p class="lede">Only this one changes. The others keep the main caption.</p>'
+    +'<textarea id="ovcap">'+esc(cur)+'</textarea>'
+    +'<div style="height:12px"></div>'
+    +'<button class="btn" id="ovsave">Save for '+p.name+'</button>'
+    +'<button class="btn ghost" id="ovclear" style="margin-top:8px">Use the main caption</button>');
+  sheet.onclick=function(e){
+    if(e.target.closest('#ovsave')){ draft.overrides[pid]=sheet.querySelector('#ovcap').value; closeSheet(); render(); }
+    if(e.target.closest('#ovclear')){ delete draft.overrides[pid]; closeSheet(); render(); }
+  };
+}
+
+function sheetConnect(pid){
+  var p=P_BY[pid], w=ws();
+  var steps={
+    tiktok:['Tap <b>Continue</b> &mdash; TikTok opens.','Log in and tap <b>Authorize</b>.','Back in TikTok: <b>Post</b> screen &rarr; <b>More options</b> &rarr; <b>Save to device: ON</b>.'],
+    instagram:['Instagram must be a <b>Professional</b> account &mdash; Business or Creator, free.','In Instagram: Settings &rarr; Account type and tools &rarr; <b>Switch to professional</b>.','Come back, tap <b>Continue</b>, log in, approve.'],
+    facebook:['Tap <b>Continue</b> and log in with Facebook.','Choose which <b>Page</b> to post to.','Approve the permissions screen.'],
+    youtube:['Tap <b>Continue</b> and sign in with Google.','Choose the channel.','Approve upload access.'],
+    x:['Tap <b>Continue</b>, log in to X, authorize.']
+  }[pid];
+  var h='<h3>Connect '+p.name+'</h3><p class="lede">Saved to <b>'+esc(w.name)+'</b>. Do it once.</p>';
+  steps.forEach(function(s,i){ h+='<div class="step"><span class="n">'+(i+1)+'</span><span class="t">'+s+'</span></div>'; });
+  h+='<p class="note">'+helpFor(pid)+'</p><div style="height:14px"></div>'
+    +'<button class="btn" id="cgo">Continue to '+p.name+'</button>'
+    +'<button class="btn ghost" data-act="closesheet" style="margin-top:8px">Not now</button>';
+  openSheet(h);
+  sheet.onclick=function(e){
+    if(e.target.closest('[data-act=closesheet]')) return closeSheet();
+    if(e.target.closest('#cgo')){
+      var w2=ws();
+      w2.connections[pid]={connected:true,handle:'@'+w2.name.toLowerCase().replace(/[^a-z0-9]+/g,''),
+        expiresInDays: pid==='facebook'||pid==='instagram' ? 58 : null};
+      draft.dests[pid]=true; save(); closeSheet(); render();
+      toast(p.name+' connected.');
+    }
+  };
+}
+
+/* ---------------- blast ---------------- */
+function blast(){
+  var w=ws();
+  var picked=PLATFORMS.filter(function(p){return draft.dests[p.id]&&w.connections[p.id].connected;});
+  if(!picked.length||!draft.url) return;
+  var h='<h3>Post as '+esc(w.name)+'?</h3>'
+    +'<div class="wsrow" style="pointer-events:none">'+avatar(w,'wsdot','width:48px;height:48px;font-size:17px')
+    +'<span><span class="nm" style="font-size:19px">'+esc(w.name)+'</span><br><span class="sub">'+picked.length+' destinations</span></span></div>'
+    +'<p class="lede" style="margin-top:12px">'+picked.map(function(p){return p.name;}).join(' &middot; ')+'</p>'
+    +'<button class="btn" id="bgo">Yes &mdash; blast it</button>'
+    +'<button class="btn ghost" data-act="closesheet" style="margin-top:8px">Cancel</button>'
+    +'<p class="note">Confirming is required by TikTok before anything is published, and it is also how you make sure you are in the right profile.</p>';
+  openSheet(h);
+  sheet.onclick=function(e){
+    if(e.target.closest('[data-act=closesheet]')) return closeSheet();
+    if(!e.target.closest('#bgo')) return;
+    closeSheet();
+    var post={id:uid(),at:Date.now(),caption:draft.caption,results:{}};
+    picked.forEach(function(p){ post.results[p.id]='sending'; });
+    w.posts.push(post); save(); route='queue'; render();
+    picked.forEach(function(p,i){
+      setTimeout(function(){
+        var live=ws(); var rec=live.posts.filter(function(x){return x.id===post.id;})[0];
+        if(!rec) return;
+        rec.results[p.id]='ok';
+        save(); if(route==='queue') render();
+        if(i===picked.length-1){ resetDraft(); toast('Posted to '+picked.length+'. You heard nothing bad — that means it worked.'); }
+      }, 900+i*700);
+    });
+  };
+}
+function retry(postId,pid){
+  var w=ws(), rec=w.posts.filter(function(x){return x.id===postId;})[0];
+  if(!rec) return;
+  rec.results[pid]='sending'; save(); render();
+  setTimeout(function(){ var r2=ws().posts.filter(function(x){return x.id===postId;})[0];
+    if(r2){ r2.results[pid]='ok'; save(); render(); toast(P_BY[pid].name+' posted.'); } },1100);
+}
+
+/* ---------------- slick profile switching ---------------- */
+function switchTo(id){
+  if(id===S.activeWs){ closeSheet(); return; }
+  var target=S.workspaces.filter(function(x){return x.id===id;})[0];
+  if(!target) return;
+  if(navigator.vibrate) try{navigator.vibrate(8);}catch(e){}
+
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  S.activeWs=id; save(); resetDraft(); route='home';
+
+  if(reduce){ render(); return; }
+
+  var sw=document.createElement('div');
+  sw.className='sweep'; sw.style.background=target.color;
+  document.body.appendChild(sw);
+  requestAnimationFrame(function(){ sw.classList.add('run'); });
+
+  setTimeout(function(){ render(); flashWs(target); }, 130);
+  setTimeout(function(){ sw.remove(); }, 620);
+}
+function flashWs(w){
+  var f=document.createElement('div');
+  f.className='wsflash';
+  f.innerHTML=(w.logo?'<i style="background:'+w.color+';overflow:hidden"><img src="'+w.logo+'" style="width:100%;height:100%;object-fit:cover;border-radius:99px;display:block"></i>'
+    :'<i style="background:'+w.color+'"></i>')+esc(w.name);
+  document.body.appendChild(f);
+  requestAnimationFrame(function(){ f.classList.add('on'); });
+  setTimeout(function(){ f.classList.remove('on');
+    setTimeout(function(){ f.remove(); },320); }, 1150);
+}
+
+/* ---------------- toast ---------------- */
+var toastEl=null;
+function toast(msg){
+  if(toastEl) toastEl.remove();
+  toastEl=document.createElement('div');
+  toastEl.textContent=msg;
+  toastEl.style.cssText='position:fixed;left:50%;bottom:86px;transform:translateX(-50%) translateY(10px);'
+    +'background:var(--sm-ink);color:var(--sm-bg);padding:11px 17px;border-radius:99px;font-weight:700;'
+    +'font-size:13.5px;z-index:80;max-width:88vw;text-align:center;opacity:0;'
+    +'transition:opacity .25s,transform .25s cubic-bezier(.22,.61,.36,1);box-shadow:0 8px 22px #0004';
+  document.body.appendChild(toastEl);
+  requestAnimationFrame(function(){ toastEl.style.opacity='1'; toastEl.style.transform='translateX(-50%)'; });
+  setTimeout(function(){ if(toastEl){toastEl.style.opacity='0'; setTimeout(function(){toastEl&&toastEl.remove();},300);} },2600);
+}
+
+/* ---------------- boot ---------------- */
+load();
+if(S.onboarded && ws()) resetDraft();
+render();
+window.addEventListener('pageshow',function(){ /* keep state fresh across bfcache */ });
+})();</script></body></html>
