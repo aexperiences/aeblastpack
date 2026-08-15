@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/auth/tiktok/start", "destination": "/api/tiktok-auth" },
+    { "source": "/auth/tiktok/callback", "destination": "/api/tiktok-callback" }
+  ]
+}

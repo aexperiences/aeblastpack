@@ -664,6 +664,11 @@ function sheetConnect(pid){
   sheet.onclick=function(e){
     if(e.target.closest('[data-act=closesheet]')) return closeSheet();
     if(e.target.closest('#cgo')){
+      if(pid==='tiktok'){
+        var wq=ws();
+        location.href=bpBase()+'auth/tiktok/start?ws='+encodeURIComponent(wq.id);
+        return;
+      }
       var w2=ws();
       w2.connections[pid]={connected:true,handle:'@'+w2.name.toLowerCase().replace(/[^a-z0-9]+/g,''),
         expiresInDays: pid==='facebook'||pid==='instagram' ? 58 : null};
@@ -671,6 +676,38 @@ function sheetConnect(pid){
       toast(p.name+' connected.');
     }
   };
+}
+
+/* ---------------- real TikTok pipeline ---------------- */
+function bpBase(){ var p=location.pathname; return p.slice(-1)==='/'?p:p.replace(/[^/]*$/,''); }
+function setPostResult(postId,pid,val){
+  var rec=ws().posts.filter(function(x){return x.id===postId;})[0];
+  if(rec){ rec.results[pid]=val; save(); if(route==='queue') render(); }
+}
+function realTikTokPost(postId,file,caption){
+  if(!file){ setPostResult(postId,'tiktok','failed'); toast('TikTok: the video left memory — pick it again.'); return; }
+  if(file.size>4*1024*1024){ setPostResult(postId,'tiktok','failed'); toast('TikTok demo pipeline caps at 4 MB for now.'); return; }
+  fetch(bpBase()+'api/tiktok-post?caption='+encodeURIComponent(caption||''),
+        {method:'POST',headers:{'Content-Type':file.type||'video/mp4'},body:file})
+  .then(function(r){return r.json();})
+  .then(function(j){
+    if(!j.ok) throw new Error(j.error||'post failed');
+    var tries=0;
+    (function poll(){
+      fetch(bpBase()+'api/tiktok-status?publish_id='+encodeURIComponent(j.publish_id))
+      .then(function(r){return r.json();})
+      .then(function(s){
+        if(s.status==='PUBLISH_COMPLETE'||s.status==='SEND_TO_USER_INBOX'){
+          setPostResult(postId,'tiktok','ok'); resetDraft(); toast('TikTok: posted for real.');
+        } else if(s.status==='FAILED'){
+          setPostResult(postId,'tiktok','failed'); toast('TikTok failed: '+(s.reason||'unknown'));
+        } else if(++tries<15){ setTimeout(poll,2000); }
+        else { setPostResult(postId,'tiktok','failed'); toast('TikTok: timed out checking status.'); }
+      })
+      .catch(function(){ if(++tries<15) setTimeout(poll,2500); else setPostResult(postId,'tiktok','failed'); });
+    })();
+  })
+  .catch(function(e){ setPostResult(postId,'tiktok','failed'); toast('TikTok: '+e.message); });
 }
 
 /* ---------------- blast ---------------- */
@@ -693,13 +730,17 @@ function blast(){
     var post={id:uid(),at:Date.now(),caption:draft.caption,results:{}};
     picked.forEach(function(p){ post.results[p.id]='sending'; });
     w.posts.push(post); save(); route='queue'; render();
-    picked.forEach(function(p,i){
+    var ttLive = picked.some(function(p){return p.id==='tiktok';}) && !!(w.connections.tiktok&&w.connections.tiktok.real);
+    var f0=draft.file, cap0=(draft.overrides.tiktok!=null&&draft.overrides.tiktok!==''?draft.overrides.tiktok:draft.caption);
+    var sim=picked.filter(function(p){return !(p.id==='tiktok'&&ttLive);});
+    if(ttLive) realTikTokPost(post.id,f0,cap0);
+    sim.forEach(function(p,i){
       setTimeout(function(){
         var live=ws(); var rec=live.posts.filter(function(x){return x.id===post.id;})[0];
         if(!rec) return;
         rec.results[p.id]='ok';
         save(); if(route==='queue') render();
-        if(i===picked.length-1){ resetDraft(); toast('Posted to '+picked.length+'. You heard nothing bad — that means it worked.'); }
+        if(i===sim.length-1 && !ttLive){ resetDraft(); toast('Posted to '+picked.length+'. You heard nothing bad — that means it worked.'); }
       }, 900+i*700);
     });
   };
@@ -763,4 +804,21 @@ load();
 if(S.onboarded && ws()) resetDraft();
 render();
 window.addEventListener('pageshow',function(){ /* keep state fresh across bfcache */ });
-})();</script></body></html>
+})();
+/* ---------------- TikTok OAuth return ---------------- */
+(function(){
+  try{
+    var q=new URLSearchParams(location.search);
+    if(q.get('tiktok')==='connected'){
+      var wsid=q.get('ws');
+      var target=S.workspaces.filter(function(x){return x.id===wsid;})[0]||ws();
+      target.connections.tiktok={connected:true,real:true,handle:'@'+(q.get('handle')||'tiktok'),expiresInDays:null};
+      save(); history.replaceState(null,'',location.pathname);
+      render(); toast('TikTok connected for real: '+target.connections.tiktok.handle);
+    } else if(q.get('tiktok')==='error'){
+      history.replaceState(null,'',location.pathname);
+      toast('TikTok connect failed: '+(q.get('reason')||'unknown'));
+    }
+  }catch(e){}
+})();
+</script></body></html>
