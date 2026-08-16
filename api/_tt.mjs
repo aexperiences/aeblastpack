@@ -1,5 +1,5 @@
 // AE Blastpack — TikTok helpers (free stack, zero deps)
-export const BASE = process.env.BP_BASE || 'https://aexperiences.com/apps/blastpack/';
+export const BASE = process.env.BP_BASE || 'https://www.aexperiences.com/apps/blastpack/';
 export const REDIRECT = BASE + 'auth/tiktok/callback';
 
 export function parseCookies(req){
