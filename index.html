@@ -803,22 +803,23 @@ function toast(msg){
 load();
 if(S.onboarded && ws()) resetDraft();
 render();
-window.addEventListener('pageshow',function(){ /* keep state fresh across bfcache */ });
-})();
-/* ---------------- TikTok OAuth return ---------------- */
 (function(){
   try{
     var q=new URLSearchParams(location.search);
     if(q.get('tiktok')==='connected'){
       var wsid=q.get('ws');
-      var target=S.workspaces.filter(function(x){return x.id===wsid;})[0]||ws();
-      target.connections.tiktok={connected:true,real:true,handle:'@'+(q.get('handle')||'tiktok'),expiresInDays:null};
-      save(); history.replaceState(null,'',location.pathname);
-      render(); toast('TikTok connected for real: '+target.connections.tiktok.handle);
+      var target=(S.workspaces||[]).filter(function(x){return x.id===wsid;})[0]||ws();
+      if(target){
+        target.connections.tiktok={connected:true,real:true,handle:'@'+(q.get('handle')||'tiktok'),expiresInDays:null};
+        save(); history.replaceState(null,'',location.pathname);
+        render(); toast('TikTok connected: '+target.connections.tiktok.handle);
+      }
     } else if(q.get('tiktok')==='error'){
       history.replaceState(null,'',location.pathname);
       toast('TikTok connect failed: '+(q.get('reason')||'unknown'));
     }
-  }catch(e){}
+  }catch(e){ console.log('[blastpack] oauth-return',e); }
+})();
+window.addEventListener('pageshow',function(){ /* keep state fresh across bfcache */ });
 })();
 </script></body></html>
