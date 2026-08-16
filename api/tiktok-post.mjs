@@ -55,12 +55,38 @@ export default async function handler(req, res){
       })
     }).then(r => r.json());
 
-    if (!init.data || !init.data.upload_url) {
-      return res.status(200).json({ ok: false, error: (init.error && (init.error.message || init.error.code)) || 'init failed' });
+    let initData = init.data;
+    let mode = 'direct';
+
+    // Unaudited clients cannot direct-post to public accounts. Fall back to the
+    // creator's TikTok inbox (draft) — supported pre-review — rather than failing.
+    if (!initData || !initData.upload_url) {
+      const inbox = await fetch('https://open.tiktokapis.com/v2/post/publish/inbox/video/init/', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + tok.at, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_info: {
+            source: 'FILE_UPLOAD',
+            video_size: video.length,
+            chunk_size: video.length,
+            total_chunk_count: 1
+          }
+        })
+      }).then(r => r.json());
+      if (!inbox.data || !inbox.data.upload_url) {
+        return res.status(200).json({
+          ok: false,
+          error: (init.error && (init.error.message || init.error.code)) || 'init failed',
+          inboxError: (inbox.error && (inbox.error.message || inbox.error.code)) || null
+        });
+      }
+      initData = inbox.data;
+      mode = 'draft';
     }
+    const init2 = { data: initData };
 
     // 3. upload the bytes
-    const up = await fetch(init.data.upload_url, {
+    const up = await fetch(init2.data.upload_url, {
       method: 'PUT',
       headers: {
         'Content-Type': req.headers['content-type'] || 'video/mp4',
@@ -72,7 +98,7 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: false, error: 'upload failed: HTTP ' + up.status });
     }
 
-    res.status(200).json({ ok: true, publish_id: init.data.publish_id, privacy });
+    res.status(200).json({ ok: true, publish_id: init2.data.publish_id, privacy, mode });
   } catch (e) {
     res.status(200).json({ ok: false, error: e.message });
   }
