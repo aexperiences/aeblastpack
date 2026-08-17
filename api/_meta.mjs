@@ -30,8 +30,14 @@ export function parseCookies(req){
 export function b64e(obj){ return Buffer.from(JSON.stringify(obj)).toString('base64url'); }
 export function b64d(str){ try { return JSON.parse(Buffer.from(str, 'base64url').toString()); } catch { return null; } }
 
+// Only the user token and its expiry go in the cookie — never the Page list.
+// Learned the hard way: an account with 12 Pages produced a >4KB cookie (each Page carries
+// its own ~200-char token) and browsers silently DISCARD cookies over ~4096 bytes. The
+// callback appeared to succeed, then every later request read as "not connected".
+// Pages are cheap to re-fetch and re-fetching keeps them fresh, so resolve them per request.
 export function tokenCookie(tok){
-  return `bp_fb=${b64e(tok)}; Max-Age=${60*60*24*55}; Path=/; HttpOnly; Secure; SameSite=Lax`;
+  const slim = { at: tok.at, exp_at: tok.exp_at };
+  return `bp_fb=${b64e(slim)}; Max-Age=${60*60*24*55}; Path=/; HttpOnly; Secure; SameSite=Lax`;
 }
 
 // Meta long-lived user tokens last ~60 days and cannot be silently refreshed the way
@@ -89,6 +95,13 @@ export async function listTargets(userToken){
     igId: p.instagram_business_account ? p.instagram_business_account.id : null,
     igUsername: p.instagram_business_account ? p.instagram_business_account.username : null
   }));
+}
+
+// Resolve the Page/IG list for a stored token. Returns [] on any Graph failure rather than
+// throwing, so a revoked or expired token surfaces as "no targets" instead of a 500.
+export async function targetsFor(tok){
+  if (!tok || !tok.at) return [];
+  try { return await listTargets(tok.at); } catch { return []; }
 }
 
 export function bad(res, code, msg, extra){

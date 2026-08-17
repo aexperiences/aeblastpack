@@ -6,7 +6,7 @@
 //     Instagram will NOT accept a raw upload here; it fetches video_url itself, so the
 //     video must already be at a public HTTPS URL. That is why this endpoint takes a URL
 //     and not a file body, unlike the TikTok path.
-import { getToken, graph, bad } from './_meta.mjs';
+import { getToken, graph, bad, targetsFor } from './_meta.mjs';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -73,7 +73,9 @@ export default async function handler(req, res){
     return bad(res, 'bad_video_url', 'videoUrl must be a public https URL — Meta fetches the file itself.');
   }
 
-  const target = (tok.targets || []).find(t => !pageId || t.pageId === pageId) || (tok.targets || [])[0];
+  // Pages are resolved live, not read from the cookie — see tokenCookie() in _meta.mjs.
+  const all = await targetsFor(tok);
+  const target = all.find(t => !pageId || t.pageId === pageId) || all[0];
   if (!target) return bad(res, 'no_target', 'No Page available on this connection.');
 
   const results = {};
