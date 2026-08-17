@@ -898,9 +898,29 @@ function blast(){
 function retry(postId,pid){
   var w=ws(), rec=w.posts.filter(function(x){return x.id===postId;})[0];
   if(!rec) return;
-  rec.results[pid]='sending'; save(); render();
-  setTimeout(function(){ var r2=ws().posts.filter(function(x){return x.id===postId;})[0];
-    if(r2){ r2.results[pid]='ok'; save(); render(); toast(P_BY[pid].name+' posted.'); } },1100);
+  var live = !!(w.connections[pid] && w.connections[pid].real);
+
+  // This used to flip the badge to "ok" after 1.1s without calling anything. On a real
+  // connection that is a lie, and it is the exact failure this screen promises never to
+  // show. A retry now re-sends for real, or says plainly why it cannot.
+  if(live){
+    if(!draft.file){
+      toast('Pick the video again to retry — the file is no longer in memory.');
+      return;
+    }
+    rec.results[pid]='sending'; save(); render();
+    if(pid==='tiktok'){
+      realTikTokPost(postId, draft.file, (draft.overrides.tiktok!=null&&draft.overrides.tiktok!==''?draft.overrides.tiktok:rec.caption));
+    } else {
+      realMetaPost(postId, draft.file, (draft.overrides[pid]!=null&&draft.overrides[pid]!==''?draft.overrides[pid]:rec.caption), [pid]);
+    }
+    return;
+  }
+
+  // Not a live connection — this profile is still in preview, so say so rather than
+  // pretending a post went out.
+  rec.results[pid]='failed'; save(); render();
+  toast(P_BY[pid].name+' is not connected on this profile. Connect it, then post again.');
 }
 
 /* ---------------- slick profile switching ---------------- */
