@@ -292,7 +292,10 @@ function vHome(){
         +'<div class="nm"><span class="glyph '+p.cls+'" style="width:16px;height:16px;font-size:8px;border-radius:5px">'+p.ab+'</span>'+p.name+'</div>'
         +'<div class="cap">'+(cap?esc(cap):'<i>no caption</i>')+'</div></div>';
     });
-    h+='</div><p class="note">9:16 stays 9:16. Nothing gets squashed into a square without you seeing it first.</p>';
+    h+='</div>';
+    h+= draft.landscape
+      ? '<p class="note" style="color:#B7791F;font-weight:700">This video is landscape. Facebook is fine with it. Instagram Reels are 9:16, so it will post with black bars top and bottom.</p>'
+      : '<p class="note">9:16 stays 9:16. Nothing gets squashed into a square without you seeing it first.</p>';
   }
 
   var ready=!!draft.url && picked.length>0;
@@ -521,8 +524,13 @@ function wire(){
     var v=document.querySelector('.drop.has video');
     if(v) v.addEventListener('loadedmetadata',function(){
       draft.dur=v.duration;
+      draft.landscape = v.videoWidth>v.videoHeight;
       var m=document.getElementById('vmeta');
-      if(m) m.textContent=fmtDur(v.duration)+' · '+(v.videoWidth>v.videoHeight?'landscape':'9:16');
+      if(m) m.textContent=fmtDur(v.duration)+' · '+(draft.landscape?'landscape':'9:16');
+      // Instagram accepts a landscape Reel and then letterboxes it into a 9:16 frame, so it
+      // "works" and looks wrong. Say so while the video can still be swapped.
+      if(draft.landscape) toast('That video is landscape. Instagram Reels are 9:16 — it will post with bars.');
+      render();
     });
   });
 
@@ -532,7 +540,7 @@ function wire(){
 
     if(a==='go'){ go(b.dataset.r); return; }
     if(a==='pick'){ document.getElementById('file').click(); return; }
-    if(a==='clearvid'){ if(draft.url)URL.revokeObjectURL(draft.url); draft.url=null; draft.file=null; render(); return; }
+    if(a==='clearvid'){ if(draft.url)URL.revokeObjectURL(draft.url); draft.url=null; draft.file=null; draft.landscape=false; render(); return; }
     if(a==='toggle'){ draft.dests[pid]=!draft.dests[pid]; render(); return; }
 
     if(a==='skin'){
@@ -720,6 +728,42 @@ function realTikTokPost(postId,file,caption){
     })();
   })
   .catch(function(e){ setPostResult(postId,'tiktok','failed'); toast('TikTok: '+e.message); });
+}
+
+/* ---------------- truth check on boot ----------------
+   The connection lives in an HttpOnly cookie on the server, but the UI reads localStorage.
+   Those two can disagree: a different device, cleared browsing data, or the 60-day token
+   expiring all leave localStorage saying "on" while the server says nothing. That used to
+   surface as a mystery failure at post time. Ask the server on load and correct the UI. */
+function reconcileMeta(){
+  var w=ws(); if(!w) return;
+  var fb=w.connections.facebook||{}, ig=w.connections.instagram||{};
+  if(!(fb.real||ig.real)) return;               // nothing claiming a live Meta link
+  fetch(bpBase()+'api/meta-status')
+  .then(function(r){return r.json();})
+  .then(function(j){
+    var live=ws(); if(!live) return;
+    if(j&&j.connected){
+      var d=j.expiresInDays;
+      if(live.connections.facebook&&live.connections.facebook.real) live.connections.facebook.expiresInDays=d;
+      if(live.connections.instagram&&live.connections.instagram.real) live.connections.instagram.expiresInDays=d;
+      // Page vanished from the account (access removed) — do not keep pointing at it.
+      var pid=(live.connections.facebook||{}).pageId;
+      if(pid && (j.targets||[]).length && !(j.targets||[]).some(function(t){return t.pageId===pid;})){
+        save(); render();
+        toast('That Page is no longer on this account. Pick another.');
+        setTimeout(sheetMetaPage,500); return;
+      }
+      save(); if(route==='accounts') render();
+    } else {
+      live.connections.facebook={connected:false,handle:'',expiresInDays:null};
+      live.connections.instagram={connected:false,handle:'',expiresInDays:null};
+      draft.dests.facebook=false; draft.dests.instagram=false;
+      save(); render();
+      toast('Facebook and Instagram need reconnecting on this device.');
+    }
+  })
+  .catch(function(){});
 }
 
 /* ---------------- Meta Page picker ----------------
@@ -945,6 +989,7 @@ render();
         : 'Meta connect failed: '+mr);
     }
   }catch(e){ console.log('[blastpack] oauth-return',e); }
+  try{ reconcileMeta(); }catch(e){ console.log('[blastpack] reconcile',e); }
 })();
 window.addEventListener('pageshow',function(){ /* keep state fresh across bfcache */ });
 })();
