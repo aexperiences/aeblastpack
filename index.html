@@ -669,6 +669,11 @@ function sheetConnect(pid){
         location.href=bpBase()+'auth/tiktok/start?ws='+encodeURIComponent(wq.id);
         return;
       }
+      if(pid==='facebook'||pid==='instagram'){
+        var wm=ws();
+        location.href=bpBase()+'auth/meta/start?ws='+encodeURIComponent(wm.id);
+        return;
+      }
       var w2=ws();
       w2.connections[pid]={connected:true,handle:'@'+w2.name.toLowerCase().replace(/[^a-z0-9]+/g,''),
         expiresInDays: pid==='facebook'||pid==='instagram' ? 58 : null};
@@ -710,6 +715,38 @@ function realTikTokPost(postId,file,caption){
   .catch(function(e){ setPostResult(postId,'tiktok','failed'); toast('TikTok: '+e.message); });
 }
 
+/* ---------------- real Meta pipeline (Facebook Page + Instagram Reels) ----------------
+   Meta will not take an upload: it fetches video_url itself. So the file is staged to a
+   public URL first, then handed over. One stage, both destinations.                     */
+function realMetaPost(postId,file,caption,targets){
+  if(!file){
+    targets.forEach(function(t){ setPostResult(postId,t,'failed'); });
+    toast('Meta: the video left memory — pick it again.'); return;
+  }
+  fetch(bpBase()+'api/meta-upload',{method:'POST',headers:{'Content-Type':file.type||'video/mp4'},body:file})
+  .then(function(r){return r.json();})
+  .then(function(u){
+    if(!u.ok) throw new Error(u.error||'staging failed');
+    return fetch(bpBase()+'api/meta-post',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({videoUrl:u.url,caption:caption||'',targets:targets})
+    }).then(function(r){return r.json();});
+  })
+  .then(function(j){
+    var res=j.results||{};
+    targets.forEach(function(t){
+      var r=res[t];
+      setPostResult(postId,t,(r&&r.ok)?'ok':'failed');
+      if(r&&!r.ok) toast((t==='instagram'?'Instagram: ':'Facebook: ')+r.error);
+    });
+    if(targets.some(function(t){return res[t]&&res[t].ok;})){ resetDraft(); toast('Meta: posted for real.'); }
+  })
+  .catch(function(e){
+    targets.forEach(function(t){ setPostResult(postId,t,'failed'); });
+    toast('Meta: '+e.message);
+  });
+}
+
 /* ---------------- blast ---------------- */
 function blast(){
   var w=ws();
@@ -732,15 +769,24 @@ function blast(){
     w.posts.push(post); save(); route='queue'; render();
     var ttLive = picked.some(function(p){return p.id==='tiktok';}) && !!(w.connections.tiktok&&w.connections.tiktok.real);
     var f0=draft.file, cap0=(draft.overrides.tiktok!=null&&draft.overrides.tiktok!==''?draft.overrides.tiktok:draft.caption);
-    var sim=picked.filter(function(p){return !(p.id==='tiktok'&&ttLive);});
+    var metaLive = picked.filter(function(p){
+      return (p.id==='facebook'||p.id==='instagram') && !!(w.connections[p.id]&&w.connections[p.id].real);
+    }).map(function(p){return p.id;});
+    var sim=picked.filter(function(p){
+      return !(p.id==='tiktok'&&ttLive) && metaLive.indexOf(p.id)===-1;
+    });
     if(ttLive) realTikTokPost(post.id,f0,cap0);
+    if(metaLive.length){
+      var capM=(draft.overrides.facebook!=null&&draft.overrides.facebook!==''?draft.overrides.facebook:draft.caption);
+      realMetaPost(post.id,f0,capM,metaLive);
+    }
     sim.forEach(function(p,i){
       setTimeout(function(){
         var live=ws(); var rec=live.posts.filter(function(x){return x.id===post.id;})[0];
         if(!rec) return;
         rec.results[p.id]='ok';
         save(); if(route==='queue') render();
-        if(i===sim.length-1 && !ttLive){ resetDraft(); toast('Posted to '+picked.length+'. You heard nothing bad — that means it worked.'); }
+        if(i===sim.length-1 && !ttLive && !metaLive.length){ resetDraft(); toast('Posted to '+picked.length+'. You heard nothing bad — that means it worked.'); }
       }, 900+i*700);
     });
   };
@@ -817,6 +863,24 @@ render();
     } else if(q.get('tiktok')==='error'){
       history.replaceState(null,'',location.pathname);
       toast('TikTok connect failed: '+(q.get('reason')||'unknown'));
+    }
+    if(q.get('meta')==='connected'){
+      var mwsid=q.get('ws');
+      var mt=(S.workspaces||[]).filter(function(x){return x.id===mwsid;})[0]||ws();
+      if(mt){
+        var pageNm=q.get('page')||'Page', igNm=q.get('ig')||'';
+        mt.connections.facebook={connected:true,real:true,handle:pageNm,expiresInDays:58};
+        if(igNm) mt.connections.instagram={connected:true,real:true,handle:'@'+igNm,expiresInDays:58};
+        save(); history.replaceState(null,'',location.pathname);
+        render();
+        toast(igNm ? ('Meta connected: '+pageNm+' + @'+igNm) : ('Facebook connected: '+pageNm+' (no IG linked)'));
+      }
+    } else if(q.get('meta')==='error'){
+      history.replaceState(null,'',location.pathname);
+      var mr=q.get('reason')||'unknown';
+      toast(mr==='no_pages'
+        ? 'Meta: that account manages no Pages. Blastpack posts to a Page, not a personal profile.'
+        : 'Meta connect failed: '+mr);
     }
   }catch(e){ console.log('[blastpack] oauth-return',e); }
 })();

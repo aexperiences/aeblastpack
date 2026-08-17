@@ -18,7 +18,7 @@ footer img{width:30px;height:30px;vertical-align:-10px;margin-right:7px;border-r
 border-radius:12px;padding:10px 18px;font-weight:800;text-decoration:none;font-size:14.5px}</style></head><body><div class="w">
 <div class="k">AE Blastpack &middot; Accelerated Experiences LLC</div>
 <h1>Privacy Policy</h1>
-<p class="d">Last updated 15 August 2026.</p>
+<p class="d">Last updated 17 August 2026.</p>
 
 <p>AE Blastpack lets you publish one video to several social platforms at once. This policy explains
 exactly what we hold, why, and what we never do. It is written plainly on purpose.</p>
@@ -34,9 +34,11 @@ or failed. This is what powers the failure alerts.</li>
 to turn on text alerts.</b></li>
 </ul>
 
-<div class="box"><b>Your video never sits on our servers longer than the post takes.</b>
-The file you select is passed to the platforms you chose and then discarded. We do not keep a media
-library, we do not archive your videos, and we do not use your content to train anything.</div>
+<div class="box"><b>Your video is never kept as a library, archived, or used to train anything.</b>
+For TikTok, the file you select is passed straight through and discarded. Instagram and Facebook work
+differently &mdash; they will not accept an upload, they fetch the file from a URL themselves &mdash; so a video
+bound for Meta is stored briefly at an unguessable, unlisted address before Meta retrieves it. See
+<b>Video hosting</b> below.</div>
 
 <h2>Phone numbers</h2>
 <p>A phone number is <b>never required</b> to use AE Blastpack. Push and email alerts are the default
@@ -57,6 +59,36 @@ and never shared with the social platforms or any third party.</b> Turning text 
 to publish a post and to report whether it worked. Our use of information received from those APIs
 follows each platform's developer terms and limited-use requirements. You can disconnect any account
 at any time from the Accounts screen, which revokes our access and deletes the stored token.</p>
+
+<h2>How Meta data is used</h2>
+<p>These are the permissions AE Blastpack requests from Meta, and the only purpose each one serves:</p>
+<ul>
+<li><code>pages_show_list</code>, <code>pages_read_engagement</code>, <code>business_management</code>
+&mdash; list the Facebook Pages you manage, so you can pick a publishing destination.</li>
+<li><code>pages_manage_posts</code> &mdash; publish the video you selected to the Page you selected.</li>
+<li><code>instagram_basic</code> &mdash; identify the Instagram Business account linked to that Page.</li>
+<li><code>instagram_content_publish</code> &mdash; publish that video as a Reel to that account.</li>
+</ul>
+<p>These permissions are used for nothing else. Data obtained through them is not sold, not transferred
+to any third party, and not used to build a profile of you or anyone else. Access tokens are held in an
+encrypted, HttpOnly cookie in your own browser &mdash; there is no server-side user database.</p>
+
+<h2>Video hosting</h2>
+<p>Instagram and Facebook do not accept a direct upload. They are given a link and fetch the file from it.
+A video bound for either is therefore stored briefly on Vercel Blob at a randomly generated address that is
+not indexed, not listed, and not linked from anywhere. It exists so that Meta can retrieve it, and it can be
+deleted on request at any time &mdash; see <a href="./data-deletion.html">data deletion instructions</a>.</p>
+
+<h2>Deleting your data</h2>
+<p>Any one of these is sufficient, and the first two take effect immediately:</p>
+<ul>
+<li><b>Disconnect in Blastpack</b> &mdash; removes the stored token from your browser.</li>
+<li><b>Revoke at the source</b> &mdash; Facebook: Settings &rarr; Apps and Websites. TikTok: Settings &rarr;
+Security &amp; permissions &rarr; Manage app permissions.</li>
+<li><b>Email us</b> at <a href="mailto:anthonye@aexperiences.studio">anthonye@aexperiences.studio</a> and we
+delete any staged video file within 30 days and confirm in writing.</li>
+</ul>
+<p>Full detail: <a href="./data-deletion.html">data deletion instructions</a>.</p>
 
 <h2>Where it lives, and for how long</h2>
 <p>Profile settings are stored on your own device. Connection tokens and post records are held only as
