@@ -82,12 +82,19 @@ export async function save(ws, platform, tok) {
   } catch (e) { return false; }
 }
 
+/* A public blob is served through a CDN, and the CDN keys on the URL. Reconnecting an account
+   overwrites the record at the same path, so a plain read can come back with the PREVIOUS
+   token — which would look exactly like "connected", post to the wrong account, and be
+   impossible to see from outside. cacheControlMaxAge: 0 is not enough on its own, so every
+   read carries a value that has never been requested before and therefore cannot be cached. */
 export async function load(ws, platform) {
   if (!ready() || !ws) return null;
   try {
     const meta = await head(pathFor(ws, platform), { token: TOKEN() });
     if (!meta || !meta.downloadUrl) return null;
-    const r = await fetch(meta.downloadUrl, { cache: 'no-store' });
+    const fresh = meta.downloadUrl + (meta.downloadUrl.indexOf('?') < 0 ? '?' : '&')
+                + 'nocache=' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const r = await fetch(fresh, { cache: 'no-store', headers: { 'cache-control': 'no-cache' } });
     if (!r.ok) return null;
     return unseal(Buffer.from(await r.arrayBuffer()));
   } catch (e) { return null; }
