@@ -59,7 +59,18 @@ export async function getToken(req){
 }
 
 /* Used by the callback. Kept here so both stores are written in one place. */
-export async function keepToken(ws, tok){ return ws ? vaultSave(ws, 'meta', tok) : false; }
+export async function keepToken(ws, tok){
+  if (!ws) return false;
+  /* The plain facts travel with the record so the status door can answer without ever
+     touching the token, and without a Graph call that a fresh sign-in would fail anyway. */
+  const t = Array.isArray(tok.targets) ? tok.targets : [];
+  const facts = {
+    n: t.map((x) => x.pageName).filter(Boolean).join(', '),
+    x: tok.exp_at || 0,
+    t: t.map((x) => ({ page: x.pageName || '', instagram: x.igUsername || '', hasInstagram: !!x.igId }))
+  };
+  return vaultSave(ws, 'meta', tok, facts);
+}
 
 export function daysLeft(tok){
   if (!tok || !tok.exp_at) return null;

@@ -47,7 +47,7 @@ export default async function handler(req, res){
     const ws = c.bp_tt_ws || '';
     /* The vault first, then the cookie. If the vault write fails the cookie still carries it,
        so the worst case is exactly how this worked yesterday. */
-    if (ws) await vaultSave(ws, 'tiktok', tok);
+    if (ws) await vaultSave(ws, 'tiktok', tok, { n: name, x: tok.exp_at || 0 });
     res.setHeader('Set-Cookie', [
       tokenCookie(tok),
       'bp_tt_state=; Max-Age=0; Path=/',

@@ -16,8 +16,7 @@
 // on aexperiences.studio, hers is on aexperiences.com) and it carries no secret of any kind —
 // only whether a door is open, to which account, and for how much longer.
 
-import { load, save, drop, why as vaultWhy } from './_vault.mjs';
-import { daysLeft, targetsFor } from './_meta.mjs';
+import { peek, why as vaultWhy } from './_vault.mjs';
 
 /* What exists, and what honestly does not. A platform with no door says so plainly rather
    than sitting in the list looking like it is one sign-in away. */
@@ -37,23 +36,18 @@ export default async function handler(req, res) {
   const ws = String((req.query && (req.query.ws || req.query.workspace)) || '').slice(0, 64).trim();
   if (!ws) return res.status(400).json({ ok: false, error: 'NEED_WS', message: 'Say which workspace to look at.' });
 
-  /* Is the vault actually writing? A store that quietly refuses every write looks exactly
-     like "nothing is connected", which is the one failure nobody could see from outside. So
-     it can be asked. It writes a fixed marker under a reserved name, reads it back, and
-     throws it away. No real connection is touched and nothing secret comes back out. */
+  /* Is the vault actually working? It writes a marker under a reserved name, reads the facts
+     back the same way a room does, and throws it away. No real connection is touched and
+     nothing secret comes back out. */
   if (ws === '__selftest') {
-    const marker = { at: 'not-a-token', probe: Date.now() };
-    const wrote = await save(ws, 'probe', marker);
-    if (wrote) await new Promise((go) => setTimeout(go, 500));   // a real connect never reads this fast
-    const trace = [];
-    const read = wrote ? await load(ws, 'probe', trace) : null;
-    const roundTrip = !!(read && read.probe === marker.probe && read.at === marker.at);
-    if (wrote) { try { await drop(ws, 'probe'); } catch (e) {} }
-    const detail = roundTrip ? null : { trace, probe: await vaultWhy() };
+    const d = await vaultWhy();
+    const steps = d.steps || [];
+    const saved = steps.some((x) => x.step === 'save' && x.ok);
+    const readBack = steps.some((x) => x.step === 'peek' && x.matched);
     return res.status(200).json({
-      ok: true, selftest: true, wrote, roundTrip, detail,
-      verdict: roundTrip ? 'The vault writes and reads. A connection made now will be seen everywhere.'
-             : wrote ? 'It wrote but could not read it back. Connections would not survive.'
+      ok: true, selftest: true, wrote: saved, roundTrip: readBack, detail: readBack ? null : d,
+      verdict: readBack ? 'The vault writes and reads. A connection made now will be seen everywhere.'
+             : saved ? 'It wrote but could not read it back. Connections would not survive.'
              : 'It could not write. Connections would still only live in the browser that made them.'
     });
   }
@@ -65,42 +59,33 @@ export default async function handler(req, res) {
     if (p.covers) row.covers = p.covers;
     if (!p.built) { row.why = p.why; out.platforms.push(row); continue; }
 
-    let tok = null;
-    try { tok = await load(ws, p.k); } catch (e) { tok = null; }
-    if (!tok) {
+    let found = null;
+    try { found = await peek(ws, p.k); } catch (e) { found = null; }
+    if (!found) {
       row.why = 'Not connected yet. One sign-in from the room connects it everywhere, not just here.';
       out.platforms.push(row);
       continue;
     }
 
+    const f = found.facts || {};
+    const left = f.x ? Math.max(0, Math.round((f.x - Date.now()) / 86400000)) : null;
+    if (left === 0) {
+      row.why = p.k === 'meta'
+        ? 'The sign-in ran out. Meta cannot renew it quietly, so it needs doing once more.'
+        : 'The sign-in ran out and needs doing once more.';
+      out.platforms.push(row);
+      continue;
+    }
+
+    row.connected = true;
+    row.account = f.n || '';
+    row.connectedAt = found.at || null;
+    if (left != null) row.expiresInDays = left;
     if (p.k === 'tiktok') {
-      row.connected = !!tok.at;
-      row.account = tok.name || '';
-      row.expiresInDays = tok.exp_at ? Math.max(0, Math.round((tok.exp_at - Date.now()) / 86400000)) : null;
       row.note = 'Until TikTok clears the app review, a post lands in the TikTok drafts instead of going straight out.';
     } else if (p.k === 'meta') {
-      const left = daysLeft(tok);
-      if (left === 0) {
-        row.why = 'The sign-in ran out. Meta cannot renew it quietly, so it needs doing once more.';
-        out.platforms.push(row);
-        continue;
-      }
-      /* Pages are resolved live. A token that was revoked at Facebook still looks fine sitting
-         in the vault; asking Graph is the only way to know, so we ask. */
-      let targets = [];
-      try { targets = await targetsFor(tok); } catch (e) { targets = []; }
-      if (!targets.length) {
-        row.why = 'The sign-in no longer reaches a Page. It was most likely removed at Facebook, so it needs doing once more.';
-        out.platforms.push(row);
-        continue;
-      }
-      row.connected = true;
-      row.expiresInDays = left;
-      row.account = targets.map((t) => t.pageName).filter(Boolean).join(', ');
-      row.targets = targets.map((t) => ({
-        page: t.pageName || '', instagram: t.igUsername || '', hasInstagram: !!t.igId
-      }));
-      if (!targets.some((t) => t.igId)) {
+      if (Array.isArray(f.t)) row.targets = f.t;
+      if (Array.isArray(f.t) && !f.t.some((t) => t.instagram)) {
         row.note = 'Facebook is connected. Instagram is not reachable through it until the Page is linked to a Professional Instagram account.';
       }
     }

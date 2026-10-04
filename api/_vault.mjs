@@ -34,7 +34,7 @@
 // better; it is not allowed to make it worse.
 
 import { createHmac, createCipheriv, createDecipheriv, hkdfSync } from 'node:crypto';
-import { put, head, del } from '@vercel/blob';
+import { put, head, del, list } from '@vercel/blob';
 
 const SECRETS = () => String(process.env.META_APP_SECRET || '') + '|' + String(process.env.TIKTOK_CLIENT_SECRET || '');
 const TOKEN = () => process.env.BLOB_READ_WRITE_TOKEN || '';
@@ -50,12 +50,24 @@ function key() {
   return KEY;
 }
 
-/* The path is an HMAC, so the record cannot be found by guessing a workspace name even if the
-   store were ever made public by mistake. Private access is the lock; this is the second one. */
-export function pathFor(ws, platform) {
+/* THE SHAPE, AND WHY IT IS THIS SHAPE.
+   A freshly written public blob is known to the API at once but is not fetchable at its URL
+   for a long while — long enough that a room asking "is this connected?" right after a
+   sign-in got a 404 and said no. That is precisely the ghost this vault exists to end, and no
+   amount of retrying fixes it.
+   So a record is kept as a FOLDER, not a file:
+       conn/<hmac of workspace+platform>/<the plain facts, base64url>.bin
+   The folder name is an HMAC, so it cannot be guessed. The plain facts — which account, when
+   the sign-in runs out — ride in the FILE NAME, and a file name comes back from list(), which
+   is an API call and answers immediately. The secret itself is the body, sealed, and the body
+   is only ever read when something is actually about to post, by which time it has long since
+   settled. The status door therefore never touches a secret and never waits on the edge. */
+export function prefixFor(ws, platform) {
   const h = createHmac('sha256', key()).update(String(ws || '') + '\u0000' + String(platform || '')).digest('hex');
-  return 'conn/' + h.slice(0, 48) + '.bin';
+  return 'conn/' + h.slice(0, 48) + '/';
 }
+const tagOf = (facts) => Buffer.from(JSON.stringify(facts || {}), 'utf8').toString('base64url').slice(0, 700);
+const factsOf = (tag) => { try { return JSON.parse(Buffer.from(String(tag || ''), 'base64url').toString('utf8')); } catch (e) { return {}; } };
 
 function seal(obj) {
   const iv = Buffer.from(createHmac('sha256', key()).update(String(Date.now()) + Math.random()).digest()).subarray(0, 12);
@@ -71,10 +83,17 @@ function unseal(buf) {
   return JSON.parse(Buffer.concat([d.update(body), d.final()]).toString('utf8'));
 }
 
-export async function save(ws, platform, tok) {
+export async function save(ws, platform, tok, facts) {
   if (!ready() || !ws) return false;
+  const prefix = prefixFor(ws, platform);
   try {
-    await put(pathFor(ws, platform), seal({ ...tok, ws, platform, savedAt: Date.now() }), {
+    /* One record per person per platform. Reconnecting replaces the old one rather than
+       leaving two, which is how a stale token would otherwise survive a re-sign-in. */
+    try {
+      const old = await list({ prefix, token: TOKEN() });
+      for (const b of (old.blobs || [])) await del(b.url, { token: TOKEN() });
+    } catch (e) {}
+    await put(prefix + tagOf(facts) + '.bin', seal({ ...tok, ws, platform, savedAt: Date.now() }), {
       access: 'public', addRandomSuffix: false, allowOverwrite: true,
       contentType: 'application/octet-stream', cacheControlMaxAge: 0, token: TOKEN()
     });
@@ -82,27 +101,30 @@ export async function save(ws, platform, tok) {
   } catch (e) { return false; }
 }
 
-/* A public blob is served through a CDN, and the CDN keys on the URL. Reconnecting an account
-   overwrites the record at the same path, so a plain read can come back with the PREVIOUS
-   token — which would look exactly like "connected", post to the wrong account, and be
-   impossible to see from outside. cacheControlMaxAge: 0 is not enough on its own, so every
-   read carries a value that has never been requested before and therefore cannot be cached. */
+/* Is it connected, and to what? Answered from the file name through list(), so it is true the
+   instant a sign-in finishes and it never reads a secret to tell you. */
+export async function peek(ws, platform) {
+  if (!ready() || !ws) return null;
+  try {
+    const r = await list({ prefix: prefixFor(ws, platform), token: TOKEN() });
+    const b = (r.blobs || [])[0];
+    if (!b) return null;
+    const tag = b.pathname.slice(prefixFor(ws, platform).length).replace(/\.bin$/, '');
+    return { facts: factsOf(tag), at: b.uploadedAt || null, url: b.url };
+  } catch (e) { return null; }
+}
+
 export async function load(ws, platform, trace) {
   if (!ready() || !ws) return null;
-  const path = pathFor(ws, platform);
-  /* Both calls are retried, not just the fetch. A record that was written a moment ago is not
-     instantly visible to head() OR at the edge, and the first version of this put head()
-     outside the loop — so one slow lookup returned null and the room read it as "not
-     connected". That is the exact failure the vault exists to end, so it gets three tries
-     over about a second, and only then is the record genuinely not there. */
+  const found = await peek(ws, platform);
+  if (!found || !found.url) { if (trace) trace.push({ step: 'peek', error: 'no record' }); return null; }
+  /* The body is only needed when something is about to post. It can still be a moment behind
+     the edge right after a sign-in, so it gets a few tries — but nothing a person looks at
+     ever waits on this. */
   for (let attempt = 0; attempt < 3; attempt++) {
-    if (attempt) await new Promise((go) => setTimeout(go, 400));
-    let meta = null;
-    try { meta = await head(path, { token: TOKEN() }); }
-    catch (e) { if (trace) trace.push({ attempt, step: 'head', error: String((e && e.message) || e).slice(0, 120) }); continue; }
-    if (!meta || !meta.downloadUrl) { if (trace) trace.push({ attempt, step: 'head', error: 'no downloadUrl' }); continue; }
+    if (attempt) await new Promise((go) => setTimeout(go, 500));
     try {
-      const fresh = meta.downloadUrl + (meta.downloadUrl.indexOf('?') < 0 ? '?' : '&')
+      const fresh = found.url + (found.url.indexOf('?') < 0 ? '?' : '&')
                   + 'nocache=' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       const r = await fetch(fresh, { cache: 'no-store', headers: { 'cache-control': 'no-cache' } });
       if (!r.ok) { if (trace) trace.push({ attempt, step: 'fetch', status: r.status }); continue; }
@@ -118,8 +140,11 @@ export async function load(ws, platform, trace) {
 
 export async function drop(ws, platform) {
   if (!ready() || !ws) return false;
-  try { await del(pathFor(ws, platform), { token: TOKEN() }); return true; }
-  catch (e) { return false; }
+  try {
+    const r = await list({ prefix: prefixFor(ws, platform), token: TOKEN() });
+    for (const b of (r.blobs || [])) await del(b.url, { token: TOKEN() });
+    return true;
+  } catch (e) { return false; }
 }
 
 /* Diagnostics only. Everything above hides its errors on purpose, because a vault that
@@ -128,47 +153,17 @@ export async function drop(ws, platform) {
 export async function why() {
   const out = { hasStoreToken: !!TOKEN(), hasKeyMaterial: SECRETS().length > 8, steps: [] };
   if (!out.hasStoreToken || !out.hasKeyMaterial) return out;
-  const path = pathFor('__selftest', 'probe');
+  const facts = { n: 'self check', x: 0 };
   try {
-    const r = await put(path, seal({ at: 'not-a-token', probe: 1 }), {
-      access: 'public', addRandomSuffix: false, allowOverwrite: true,
-      contentType: 'application/octet-stream', cacheControlMaxAge: 0, token: TOKEN()
-    });
-    out.steps.push({ step: 'put', ok: true, pathname: r && r.pathname });
-  } catch (e) {
-    out.steps.push({ step: 'put', ok: false, error: String((e && e.message) || e).slice(0, 300),
-                     name: String((e && e.name) || '') });
-    return out;
-  }
-  let h = null;
-  try { h = await head(path, { token: TOKEN() }); out.steps.push({ step: 'head', ok: true, size: h && h.size, url: h && h.url }); }
-  catch (e) { out.steps.push({ step: 'head', ok: false, error: String((e && e.message) || e).slice(0, 300) }); }
-  /* The whole read, end to end, saying what came back at every stage. The put/head pair was
-     passing while the round trip failed, which means the answer is in here and nowhere else. */
-  for (const which of ['downloadUrl', 'url']) {
-    const base = h && h[which];
-    if (!base) { out.steps.push({ step: 'fetch:' + which, ok: false, error: 'not returned by head' }); continue; }
-    try {
-      const fresh = base + (base.indexOf('?') < 0 ? '?' : '&') + 'nocache=' + Date.now().toString(36);
-      const r = await fetch(fresh, { cache: 'no-store' });
-      const buf = Buffer.from(await r.arrayBuffer());
-      const row = { step: 'fetch:' + which, ok: r.ok, status: r.status, bytes: buf.length,
-                    firstByte: buf.length ? buf[0] : null,
-                    type: r.headers.get('content-type') || '',
-                    head16: buf.subarray(0, 16).toString('hex') };
-      if (r.ok) {
-        try { const o = unseal(buf); row.unsealed = !!o; row.sawProbe = o ? o.probe : null; }
-        catch (e) { row.unsealed = false; row.unsealError = String((e && e.message) || e).slice(0, 160); }
-      } else {
-        row.body = buf.subarray(0, 160).toString('utf8');
-      }
-      out.steps.push(row);
-    } catch (e) {
-      out.steps.push({ step: 'fetch:' + which, ok: false, error: String((e && e.message) || e).slice(0, 300) });
-    }
-  }
-  try { await del(path, { token: TOKEN() }); out.steps.push({ step: 'del', ok: true }); }
-  catch (e) { out.steps.push({ step: 'del', ok: false, error: String((e && e.message) || e).slice(0, 300) }); }
+    const ok = await save('__selftest', 'probe', { at: 'not-a-token' }, facts);
+    out.steps.push({ step: 'save', ok });
+  } catch (e) { out.steps.push({ step: 'save', ok: false, error: String((e && e.message) || e).slice(0, 200) }); return out; }
+  try {
+    const p = await peek('__selftest', 'probe');
+    out.steps.push({ step: 'peek', ok: !!p, facts: p && p.facts, matched: !!(p && p.facts && p.facts.n === 'self check') });
+  } catch (e) { out.steps.push({ step: 'peek', ok: false, error: String((e && e.message) || e).slice(0, 200) }); }
+  try { await drop('__selftest', 'probe'); out.steps.push({ step: 'drop', ok: true }); }
+  catch (e) { out.steps.push({ step: 'drop', ok: false, error: String((e && e.message) || e).slice(0, 200) }); }
   return out;
 }
 
