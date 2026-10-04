@@ -151,6 +151,19 @@ export async function why() {
       out.steps.push({ step: 'fetch:' + which, ok: false, error: String((e && e.message) || e).slice(0, 300) });
     }
   }
+  /* Does this store serve ANYTHING publicly? A plain text file at a plain path, so the answer
+     cannot be blamed on the hashed path, the binary body or the content type. */
+  try {
+    const r2 = await put('probe/hello.txt', 'hello', {
+      access: 'public', addRandomSuffix: false, allowOverwrite: true,
+      contentType: 'text/plain', token: TOKEN()
+    });
+    const r3 = await fetch(r2.url, { cache: 'no-store' });
+    out.steps.push({ step: 'plain-public-file', ok: r3.ok, status: r3.status,
+                     url: r2.url, body: (await r3.text()).slice(0, 40) });
+  } catch (e) {
+    out.steps.push({ step: 'plain-public-file', ok: false, error: String((e && e.message) || e).slice(0, 300) });
+  }
   out.steps.push({ step: 'del', skipped: true, note: 'left in place so the same object can be read again a moment later' });
   return out;
 }
