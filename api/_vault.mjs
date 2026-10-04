@@ -92,11 +92,21 @@ export async function load(ws, platform) {
   try {
     const meta = await head(pathFor(ws, platform), { token: TOKEN() });
     if (!meta || !meta.downloadUrl) return null;
-    const fresh = meta.downloadUrl + (meta.downloadUrl.indexOf('?') < 0 ? '?' : '&')
-                + 'nocache=' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-    const r = await fetch(fresh, { cache: 'no-store', headers: { 'cache-control': 'no-cache' } });
-    if (!r.ok) return null;
-    return unseal(Buffer.from(await r.arrayBuffer()));
+    /* A record that was just written is known to the store before it is served at the edge,
+       so a read that follows a connect by a second or two can come back 404 even though
+       nothing is wrong. That looked exactly like "not connected" and it is what the
+       self-check caught. Three tries over about a second covers it; beyond that the record
+       really is not there and saying so is the right answer. */
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt) await new Promise((go) => setTimeout(go, 400));
+      const fresh = meta.downloadUrl + (meta.downloadUrl.indexOf('?') < 0 ? '?' : '&')
+                  + 'nocache=' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      const r = await fetch(fresh, { cache: 'no-store', headers: { 'cache-control': 'no-cache' } });
+      if (!r.ok) continue;
+      const out = unseal(Buffer.from(await r.arrayBuffer()));
+      if (out) return out;
+    }
+    return null;
   } catch (e) { return null; }
 }
 
@@ -151,20 +161,8 @@ export async function why() {
       out.steps.push({ step: 'fetch:' + which, ok: false, error: String((e && e.message) || e).slice(0, 300) });
     }
   }
-  /* Does this store serve ANYTHING publicly? A plain text file at a plain path, so the answer
-     cannot be blamed on the hashed path, the binary body or the content type. */
-  try {
-    const r2 = await put('probe/hello.txt', 'hello', {
-      access: 'public', addRandomSuffix: false, allowOverwrite: true,
-      contentType: 'text/plain', token: TOKEN()
-    });
-    const r3 = await fetch(r2.url, { cache: 'no-store' });
-    out.steps.push({ step: 'plain-public-file', ok: r3.ok, status: r3.status,
-                     url: r2.url, body: (await r3.text()).slice(0, 40) });
-  } catch (e) {
-    out.steps.push({ step: 'plain-public-file', ok: false, error: String((e && e.message) || e).slice(0, 300) });
-  }
-  out.steps.push({ step: 'del', skipped: true, note: 'left in place so the same object can be read again a moment later' });
+  try { await del(path, { token: TOKEN() }); out.steps.push({ step: 'del', ok: true }); }
+  catch (e) { out.steps.push({ step: 'del', ok: false, error: String((e && e.message) || e).slice(0, 300) }); }
   return out;
 }
 

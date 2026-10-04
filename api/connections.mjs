@@ -44,6 +44,7 @@ export default async function handler(req, res) {
   if (ws === '__selftest') {
     const marker = { at: 'not-a-token', probe: Date.now() };
     const wrote = await save(ws, 'probe', marker);
+    if (wrote) await new Promise((go) => setTimeout(go, 500));   // a real connect never reads this fast
     const read = wrote ? await load(ws, 'probe') : null;
     const roundTrip = !!(read && read.probe === marker.probe && read.at === marker.at);
     if (wrote) { try { await drop(ws, 'probe'); } catch (e) {} }
