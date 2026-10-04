@@ -1,0 +1,8 @@
+{
+  "name": "aeblastpack",
+  "private": true,
+  "description": "AE Blastpack. The vault needs one dependency; everything else stays zero-dep.",
+  "dependencies": {
+    "@vercel/blob": "2.8.0"
+  }
+}

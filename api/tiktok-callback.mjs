@@ -1,4 +1,5 @@
 import { BASE, REDIRECT, parseCookies, tokenCookie } from './_tt.mjs';
+import { save as vaultSave } from './_vault.mjs';
 
 export default async function handler(req, res){
   const back = (params) => {
@@ -43,12 +44,15 @@ export default async function handler(req, res){
       open_id: tj.open_id,
       name, avatar
     };
+    const ws = c.bp_tt_ws || '';
+    /* The vault first, then the cookie. If the vault write fails the cookie still carries it,
+       so the worst case is exactly how this worked yesterday. */
+    if (ws) await vaultSave(ws, 'tiktok', tok);
     res.setHeader('Set-Cookie', [
       tokenCookie(tok),
       'bp_tt_state=; Max-Age=0; Path=/',
       'bp_tt_ws=; Max-Age=0; Path=/'
     ]);
-    const ws = c.bp_tt_ws || '';
     return back('tiktok=connected&handle=' + encodeURIComponent(name) + '&ws=' + encodeURIComponent(ws));
   } catch (e) {
     return back('tiktok=error&reason=' + encodeURIComponent(e.message));

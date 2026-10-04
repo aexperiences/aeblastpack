@@ -1,5 +1,5 @@
 // AE Blastpack — Meta OAuth callback: code -> short token -> long-lived token -> targets.
-import { BASE, REDIRECT, graph, longLived, listTargets, tokenCookie, parseCookies } from './_meta.mjs';
+import { BASE, REDIRECT, graph, longLived, listTargets, tokenCookie, parseCookies, keepToken } from './_meta.mjs';
 
 function back(res, params){
   const url = new URL(BASE);
@@ -40,6 +40,8 @@ export default async function handler(req, res){
     }
 
     const tok = { at, exp_at: Date.now() + ttl, targets };
+    /* The vault first, then the cookie — same reasoning as the TikTok callback. */
+    if (ws) await keepToken(ws, tok);
     res.setHeader('Set-Cookie', [
       tokenCookie(tok),
       'bp_fb_state=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax'

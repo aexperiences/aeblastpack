@@ -700,6 +700,11 @@ function sheetConnect(pid){
 
 /* ---------------- real TikTok pipeline ---------------- */
 function bpBase(){ var p=location.pathname; return p.slice(-1)==='/'?p:p.replace(/[^/]*$/,''); }
+/* Oct 3 2026 — every call to the API says which workspace it is for. Before this, one
+   browser cookie served every workspace, so a post made under one brand could go out on
+   another brand's account. The vault keeps one record per workspace; this is how a call
+   names its own. */
+function wsq(){ var w=ws(); return 'ws='+encodeURIComponent((w&&w.id)||''); }
 function setPostResult(postId,pid,val){
   var rec=ws().posts.filter(function(x){return x.id===postId;})[0];
   if(rec){ rec.results[pid]=val; save(); if(route==='queue') render(); }
@@ -707,14 +712,14 @@ function setPostResult(postId,pid,val){
 function realTikTokPost(postId,file,caption){
   if(!file){ setPostResult(postId,'tiktok','failed'); toast('TikTok: the video left memory — pick it again.'); return; }
   if(file.size>4*1024*1024){ setPostResult(postId,'tiktok','failed'); toast('TikTok demo pipeline caps at 4 MB for now.'); return; }
-  fetch(bpBase()+'api/tiktok-post?caption='+encodeURIComponent(caption||''),
+  fetch(bpBase()+'api/tiktok-post?'+wsq()+'&caption='+encodeURIComponent(caption||''),
         {method:'POST',headers:{'Content-Type':file.type||'video/mp4'},body:file})
   .then(function(r){return r.json();})
   .then(function(j){
     if(!j.ok) throw new Error(j.error||'post failed');
     var tries=0;
     (function poll(){
-      fetch(bpBase()+'api/tiktok-status?publish_id='+encodeURIComponent(j.publish_id))
+      fetch(bpBase()+'api/tiktok-status?'+wsq()+'&publish_id='+encodeURIComponent(j.publish_id))
       .then(function(r){return r.json();})
       .then(function(s){
         if(s.status==='PUBLISH_COMPLETE'||s.status==='SEND_TO_USER_INBOX'){
@@ -739,7 +744,7 @@ function reconcileMeta(){
   var w=ws(); if(!w) return;
   var fb=w.connections.facebook||{}, ig=w.connections.instagram||{};
   if(!(fb.real||ig.real)) return;               // nothing claiming a live Meta link
-  fetch(bpBase()+'api/meta-status')
+  fetch(bpBase()+'api/meta-status?'+wsq())
   .then(function(r){return r.json();})
   .then(function(j){
     var live=ws(); if(!live) return;
@@ -771,7 +776,7 @@ function reconcileMeta(){
    one the API returned, which is how a test post landed on the wrong Page. Never guess
    which Page someone meant — ask, and show the Instagram account that rides along with it. */
 function metaPages(cb){
-  fetch(bpBase()+'api/meta-status')
+  fetch(bpBase()+'api/meta-status?'+wsq())
   .then(function(r){return r.json();})
   .then(function(j){ cb(j&&j.connected?(j.targets||[]):[]); })
   .catch(function(){ cb([]); });
@@ -827,11 +832,11 @@ function realMetaPost(postId,file,caption,targets){
     targets.forEach(function(t){ setPostResult(postId,t,'failed'); });
     toast('Meta: the video left memory — pick it again.'); return;
   }
-  fetch(bpBase()+'api/meta-upload',{method:'POST',headers:{'Content-Type':file.type||'video/mp4'},body:file})
+  fetch(bpBase()+'api/meta-upload?'+wsq(),{method:'POST',headers:{'Content-Type':file.type||'video/mp4'},body:file})
   .then(function(r){return r.json();})
   .then(function(u){
     if(!u.ok) throw new Error(u.error||'staging failed');
-    return fetch(bpBase()+'api/meta-post',{
+    return fetch(bpBase()+'api/meta-post?'+wsq(),{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({videoUrl:u.url,caption:caption||'',targets:targets,pageId:(ws().connections.facebook||{}).pageId||null})
     }).then(function(r){return r.json();});

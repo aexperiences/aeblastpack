@@ -1,8 +1,24 @@
 {
   "rewrites": [
-    { "source": "/auth/tiktok/start", "destination": "/api/tiktok-auth" },
-    { "source": "/auth/tiktok/callback", "destination": "/api/tiktok-callback" },
-    { "source": "/auth/meta/start", "destination": "/api/meta-auth" },
-    { "source": "/auth/meta/callback", "destination": "/api/meta-callback" }
+    {
+      "source": "/auth/tiktok/start",
+      "destination": "/api/tiktok-auth"
+    },
+    {
+      "source": "/auth/tiktok/callback",
+      "destination": "/api/tiktok-callback"
+    },
+    {
+      "source": "/auth/meta/start",
+      "destination": "/api/meta-auth"
+    },
+    {
+      "source": "/auth/meta/callback",
+      "destination": "/api/meta-callback"
+    },
+    {
+      "source": "/connections",
+      "destination": "/api/connections"
+    }
   ]
 }

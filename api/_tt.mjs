@@ -1,4 +1,9 @@
-// AE Blastpack — TikTok helpers (free stack, zero deps)
+// AE Blastpack — TikTok helpers.
+// Oct 3 2026: the token no longer lives only in a browser cookie. It is kept in the vault,
+// per workspace, so the same connection answers on his laptop, her phone and a scheduled
+// job. The cookie is still read as a fallback so a browser connected before today keeps
+// working, and it is still written so nothing about the app's own flow changes.
+import { load as vaultLoad, save as vaultSave, wsOf } from './_vault.mjs';
 export const BASE = process.env.BP_BASE || 'https://www.aexperiences.com/apps/blastpack/';
 export const REDIRECT = BASE + 'auth/tiktok/callback';
 
@@ -21,7 +26,10 @@ export function tokenCookie(tok){
 
 export async function getToken(req, res){
   const c = parseCookies(req);
-  let tok = c.bp_tt ? b64d(c.bp_tt) : null;
+  const ws = wsOf(req, c);
+  let tok = null;
+  if (ws) tok = await vaultLoad(ws, 'tiktok');          // the vault first: it is the one that travels
+  if (!tok) tok = c.bp_tt ? b64d(c.bp_tt) : null;       // then this browser, for connections made before Oct 3
   if (!tok) return null;
   if (Date.now() > (tok.exp_at || 0) - 60_000) {
     // refresh
@@ -40,6 +48,7 @@ export async function getToken(req, res){
     if (!j.access_token) return null;
     tok = { ...tok, at: j.access_token, rt: j.refresh_token || tok.rt, exp_at: Date.now() + (j.expires_in || 86400) * 1000 };
     if (res) res.setHeader('Set-Cookie', tokenCookie(tok));
+    if (ws) await vaultSave(ws, 'tiktok', tok);         // a refreshed token is kept where everything can see it
   }
   return tok;
 }

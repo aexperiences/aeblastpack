@@ -1,6 +1,10 @@
 // AE Blastpack — Meta (Facebook Page + Instagram) helpers. Zero deps.
 // The www host is load-bearing: aexperiences.com 301s to www and Meta matches host exactly
 // with Strict Mode on for redirect URIs. Do not "simplify" this.
+// Oct 3 2026: the token is kept in the vault, per workspace, not only in this browser's
+// cookie. See api/_vault.mjs for why that mattered.
+import { load as vaultLoad, save as vaultSave, wsOf } from './_vault.mjs';
+
 export const BASE = process.env.BP_BASE || 'https://www.aexperiences.com/apps/blastpack/';
 export const REDIRECT = BASE + 'auth/meta/callback';
 
@@ -45,11 +49,17 @@ export function tokenCookie(tok){
 // honestly rather than failing at post time.
 export async function getToken(req){
   const c = parseCookies(req);
-  const tok = c.bp_fb ? b64d(c.bp_fb) : null;
+  const ws = wsOf(req, c);
+  let tok = null;
+  if (ws) tok = await vaultLoad(ws, 'meta');            // the vault first: it is the one that travels
+  if (!tok) tok = c.bp_fb ? b64d(c.bp_fb) : null;       // then this browser, for connections made before Oct 3
   if (!tok) return null;
   if (Date.now() > (tok.exp_at || 0)) return null;
   return tok;
 }
+
+/* Used by the callback. Kept here so both stores are written in one place. */
+export async function keepToken(ws, tok){ return ws ? vaultSave(ws, 'meta', tok) : false; }
 
 export function daysLeft(tok){
   if (!tok || !tok.exp_at) return null;
