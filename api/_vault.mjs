@@ -87,27 +87,33 @@ export async function save(ws, platform, tok) {
    token — which would look exactly like "connected", post to the wrong account, and be
    impossible to see from outside. cacheControlMaxAge: 0 is not enough on its own, so every
    read carries a value that has never been requested before and therefore cannot be cached. */
-export async function load(ws, platform) {
+export async function load(ws, platform, trace) {
   if (!ready() || !ws) return null;
-  try {
-    const meta = await head(pathFor(ws, platform), { token: TOKEN() });
-    if (!meta || !meta.downloadUrl) return null;
-    /* A record that was just written is known to the store before it is served at the edge,
-       so a read that follows a connect by a second or two can come back 404 even though
-       nothing is wrong. That looked exactly like "not connected" and it is what the
-       self-check caught. Three tries over about a second covers it; beyond that the record
-       really is not there and saying so is the right answer. */
-    for (let attempt = 0; attempt < 3; attempt++) {
-      if (attempt) await new Promise((go) => setTimeout(go, 400));
+  const path = pathFor(ws, platform);
+  /* Both calls are retried, not just the fetch. A record that was written a moment ago is not
+     instantly visible to head() OR at the edge, and the first version of this put head()
+     outside the loop — so one slow lookup returned null and the room read it as "not
+     connected". That is the exact failure the vault exists to end, so it gets three tries
+     over about a second, and only then is the record genuinely not there. */
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await new Promise((go) => setTimeout(go, 400));
+    let meta = null;
+    try { meta = await head(path, { token: TOKEN() }); }
+    catch (e) { if (trace) trace.push({ attempt, step: 'head', error: String((e && e.message) || e).slice(0, 120) }); continue; }
+    if (!meta || !meta.downloadUrl) { if (trace) trace.push({ attempt, step: 'head', error: 'no downloadUrl' }); continue; }
+    try {
       const fresh = meta.downloadUrl + (meta.downloadUrl.indexOf('?') < 0 ? '?' : '&')
                   + 'nocache=' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       const r = await fetch(fresh, { cache: 'no-store', headers: { 'cache-control': 'no-cache' } });
-      if (!r.ok) continue;
+      if (!r.ok) { if (trace) trace.push({ attempt, step: 'fetch', status: r.status }); continue; }
       const out = unseal(Buffer.from(await r.arrayBuffer()));
       if (out) return out;
+      if (trace) trace.push({ attempt, step: 'unseal', error: 'did not open' });
+    } catch (e) {
+      if (trace) trace.push({ attempt, step: 'fetch', error: String((e && e.message) || e).slice(0, 120) });
     }
-    return null;
-  } catch (e) { return null; }
+  }
+  return null;
 }
 
 export async function drop(ws, platform) {
