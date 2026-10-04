@@ -88,6 +88,31 @@ export async function drop(ws, platform) {
   catch (e) { return false; }
 }
 
+/* Diagnostics only. Everything above hides its errors on purpose, because a vault that
+   throws must never take a room down with it — but a vault that quietly refuses every write
+   looks exactly like "nothing is connected", so there has to be one way to ask it why. */
+export async function why() {
+  const out = { hasStoreToken: !!TOKEN(), hasKeyMaterial: SECRETS().length > 8, steps: [] };
+  if (!out.hasStoreToken || !out.hasKeyMaterial) return out;
+  const path = pathFor('__selftest', 'probe');
+  try {
+    const r = await put(path, seal({ at: 'not-a-token', probe: 1 }), {
+      access: 'private', addRandomSuffix: false, allowOverwrite: true,
+      contentType: 'application/octet-stream', cacheControlMaxAge: 0, token: TOKEN()
+    });
+    out.steps.push({ step: 'put', ok: true, pathname: r && r.pathname });
+  } catch (e) {
+    out.steps.push({ step: 'put', ok: false, error: String((e && e.message) || e).slice(0, 300),
+                     name: String((e && e.name) || '') });
+    return out;
+  }
+  try { const h = await head(path, { token: TOKEN() }); out.steps.push({ step: 'head', ok: true, size: h && h.size }); }
+  catch (e) { out.steps.push({ step: 'head', ok: false, error: String((e && e.message) || e).slice(0, 300) }); }
+  try { await del(path, { token: TOKEN() }); out.steps.push({ step: 'del', ok: true }); }
+  catch (e) { out.steps.push({ step: 'del', ok: false, error: String((e && e.message) || e).slice(0, 300) }); }
+  return out;
+}
+
 /* Which workspace is this request about? The room says so in the query; the app says so in the
    cookie it set when the connect started. Anything else is a guess, and we do not guess. */
 export function wsOf(req, cookies) {

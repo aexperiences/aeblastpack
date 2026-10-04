@@ -16,7 +16,7 @@
 // on aexperiences.studio, hers is on aexperiences.com) and it carries no secret of any kind —
 // only whether a door is open, to which account, and for how much longer.
 
-import { load, save, drop } from './_vault.mjs';
+import { load, save, drop, why as vaultWhy } from './_vault.mjs';
 import { daysLeft, targetsFor } from './_meta.mjs';
 
 /* What exists, and what honestly does not. A platform with no door says so plainly rather
@@ -47,8 +47,9 @@ export default async function handler(req, res) {
     const read = wrote ? await load(ws, 'probe') : null;
     const roundTrip = !!(read && read.probe === marker.probe && read.at === marker.at);
     if (wrote) { try { await drop(ws, 'probe'); } catch (e) {} }
+    const detail = roundTrip ? null : await vaultWhy();
     return res.status(200).json({
-      ok: true, selftest: true, wrote, roundTrip,
+      ok: true, selftest: true, wrote, roundTrip, detail,
       verdict: roundTrip ? 'The vault writes and reads. A connection made now will be seen everywhere.'
              : wrote ? 'It wrote but could not read it back. Connections would not survive.'
              : 'It could not write. Connections would still only live in the browser that made them.'
