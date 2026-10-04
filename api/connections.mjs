@@ -16,7 +16,7 @@
 // on aexperiences.studio, hers is on aexperiences.com) and it carries no secret of any kind —
 // only whether a door is open, to which account, and for how much longer.
 
-import { load } from './_vault.mjs';
+import { load, save, drop } from './_vault.mjs';
 import { daysLeft, targetsFor } from './_meta.mjs';
 
 /* What exists, and what honestly does not. A platform with no door says so plainly rather
@@ -36,6 +36,24 @@ export default async function handler(req, res) {
 
   const ws = String((req.query && (req.query.ws || req.query.workspace)) || '').slice(0, 64).trim();
   if (!ws) return res.status(400).json({ ok: false, error: 'NEED_WS', message: 'Say which workspace to look at.' });
+
+  /* Is the vault actually writing? A store that quietly refuses every write looks exactly
+     like "nothing is connected", which is the one failure nobody could see from outside. So
+     it can be asked. It writes a fixed marker under a reserved name, reads it back, and
+     throws it away. No real connection is touched and nothing secret comes back out. */
+  if (ws === '__selftest') {
+    const marker = { at: 'not-a-token', probe: Date.now() };
+    const wrote = await save(ws, 'probe', marker);
+    const read = wrote ? await load(ws, 'probe') : null;
+    const roundTrip = !!(read && read.probe === marker.probe && read.at === marker.at);
+    if (wrote) { try { await drop(ws, 'probe'); } catch (e) {} }
+    return res.status(200).json({
+      ok: true, selftest: true, wrote, roundTrip,
+      verdict: roundTrip ? 'The vault writes and reads. A connection made now will be seen everywhere.'
+             : wrote ? 'It wrote but could not read it back. Connections would not survive.'
+             : 'It could not write. Connections would still only live in the browser that made them.'
+    });
+  }
 
   const out = { ok: true, ws, checkedAt: new Date().toISOString(), platforms: [] };
 
