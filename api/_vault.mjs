@@ -13,9 +13,20 @@
 //     queue. That was never a missing drainer. It was a missing vault.
 //
 // So a connection is kept here instead: one record per workspace per platform, in this
-// project's own Blob store, written private (not readable by URL) and sealed on top of that
-// with AES-256-GCM. The seal key is derived from two secrets this project already holds, so
-// nothing new has to be issued, pasted or stored anywhere.
+// project's own Blob store, sealed with AES-256-GCM under a key derived from two secrets this
+// project already holds. Nothing new has to be issued, pasted or stored anywhere.
+//
+// ON THE STORE BEING PUBLIC. Blastpack's Blob store was created public, and a store cannot be
+// switched after the fact — a private one has to be made, which this lane does not have the
+// permission to do. A public store means an object can be read by anyone who knows its exact
+// URL. It does NOT mean anyone can list it. So two things carry the weight instead, and both
+// have to fail before anything leaks:
+//   1. The pathname is an HMAC of the workspace and platform under the same derived key —
+//      192 bits with no structure to attack. It cannot be guessed or walked.
+//   2. The body is AES-256-GCM. A URL alone yields ciphertext and nothing else, and a single
+//      altered byte makes it refuse to open rather than hand back something half-trusted.
+// When a private store can be created, this becomes a one-word change: 'public' -> 'private'
+// in save(), and nothing else moves.
 //
 // It is deliberately FAIL-SOFT. Every call swallows its own errors and returns null. If the
 // store is cold, the key material is missing, or anything at all goes wrong, the caller falls
@@ -64,7 +75,7 @@ export async function save(ws, platform, tok) {
   if (!ready() || !ws) return false;
   try {
     await put(pathFor(ws, platform), seal({ ...tok, ws, platform, savedAt: Date.now() }), {
-      access: 'private', addRandomSuffix: false, allowOverwrite: true,
+      access: 'public', addRandomSuffix: false, allowOverwrite: true,
       contentType: 'application/octet-stream', cacheControlMaxAge: 0, token: TOKEN()
     });
     return true;
@@ -97,7 +108,7 @@ export async function why() {
   const path = pathFor('__selftest', 'probe');
   try {
     const r = await put(path, seal({ at: 'not-a-token', probe: 1 }), {
-      access: 'private', addRandomSuffix: false, allowOverwrite: true,
+      access: 'public', addRandomSuffix: false, allowOverwrite: true,
       contentType: 'application/octet-stream', cacheControlMaxAge: 0, token: TOKEN()
     });
     out.steps.push({ step: 'put', ok: true, pathname: r && r.pathname });
