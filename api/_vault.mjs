@@ -124,8 +124,33 @@ export async function why() {
                      name: String((e && e.name) || '') });
     return out;
   }
-  try { const h = await head(path, { token: TOKEN() }); out.steps.push({ step: 'head', ok: true, size: h && h.size }); }
+  let h = null;
+  try { h = await head(path, { token: TOKEN() }); out.steps.push({ step: 'head', ok: true, size: h && h.size, hasDownloadUrl: !!(h && h.downloadUrl), hasUrl: !!(h && h.url) }); }
   catch (e) { out.steps.push({ step: 'head', ok: false, error: String((e && e.message) || e).slice(0, 300) }); }
+  /* The whole read, end to end, saying what came back at every stage. The put/head pair was
+     passing while the round trip failed, which means the answer is in here and nowhere else. */
+  for (const which of ['downloadUrl', 'url']) {
+    const base = h && h[which];
+    if (!base) { out.steps.push({ step: 'fetch:' + which, ok: false, error: 'not returned by head' }); continue; }
+    try {
+      const fresh = base + (base.indexOf('?') < 0 ? '?' : '&') + 'nocache=' + Date.now().toString(36);
+      const r = await fetch(fresh, { cache: 'no-store' });
+      const buf = Buffer.from(await r.arrayBuffer());
+      const row = { step: 'fetch:' + which, ok: r.ok, status: r.status, bytes: buf.length,
+                    firstByte: buf.length ? buf[0] : null,
+                    type: r.headers.get('content-type') || '',
+                    head16: buf.subarray(0, 16).toString('hex') };
+      if (r.ok) {
+        try { const o = unseal(buf); row.unsealed = !!o; row.sawProbe = o ? o.probe : null; }
+        catch (e) { row.unsealed = false; row.unsealError = String((e && e.message) || e).slice(0, 160); }
+      } else {
+        row.body = buf.subarray(0, 160).toString('utf8');
+      }
+      out.steps.push(row);
+    } catch (e) {
+      out.steps.push({ step: 'fetch:' + which, ok: false, error: String((e && e.message) || e).slice(0, 300) });
+    }
+  }
   try { await del(path, { token: TOKEN() }); out.steps.push({ step: 'del', ok: true }); }
   catch (e) { out.steps.push({ step: 'del', ok: false, error: String((e && e.message) || e).slice(0, 300) }); }
   return out;
