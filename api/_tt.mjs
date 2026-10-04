@@ -48,7 +48,9 @@ export async function getToken(req, res){
     if (!j.access_token) return null;
     tok = { ...tok, at: j.access_token, rt: j.refresh_token || tok.rt, exp_at: Date.now() + (j.expires_in || 86400) * 1000 };
     if (res) res.setHeader('Set-Cookie', tokenCookie(tok));
-    if (ws) await vaultSave(ws, 'tiktok', tok);         // a refreshed token is kept where everything can see it
+    // A refreshed token is kept where everything can see it — and it carries the handle and the
+    // new expiry with it, because the record's own file name is what the rooms read.
+    if (ws) await vaultSave(ws, 'tiktok', tok, { n: tok.name || '', x: tok.exp_at || 0 });
   }
   return tok;
 }
