@@ -125,7 +125,7 @@ export async function why() {
     return out;
   }
   let h = null;
-  try { h = await head(path, { token: TOKEN() }); out.steps.push({ step: 'head', ok: true, size: h && h.size, hasDownloadUrl: !!(h && h.downloadUrl), hasUrl: !!(h && h.url) }); }
+  try { h = await head(path, { token: TOKEN() }); out.steps.push({ step: 'head', ok: true, size: h && h.size, url: h && h.url }); }
   catch (e) { out.steps.push({ step: 'head', ok: false, error: String((e && e.message) || e).slice(0, 300) }); }
   /* The whole read, end to end, saying what came back at every stage. The put/head pair was
      passing while the round trip failed, which means the answer is in here and nowhere else. */
@@ -151,8 +151,7 @@ export async function why() {
       out.steps.push({ step: 'fetch:' + which, ok: false, error: String((e && e.message) || e).slice(0, 300) });
     }
   }
-  try { await del(path, { token: TOKEN() }); out.steps.push({ step: 'del', ok: true }); }
-  catch (e) { out.steps.push({ step: 'del', ok: false, error: String((e && e.message) || e).slice(0, 300) }); }
+  out.steps.push({ step: 'del', skipped: true, note: 'left in place so the same object can be read again a moment later' });
   return out;
 }
 
