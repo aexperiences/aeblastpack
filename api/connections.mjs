@@ -17,6 +17,7 @@
 // only whether a door is open, to which account, and for how much longer.
 
 import { peek, why as vaultWhy } from './_vault.mjs';
+import { gate } from './_lane.mjs';
 
 /* What exists, and what honestly does not. A platform with no door says so plainly rather
    than sitting in the list looking like it is one sign-in away. */
@@ -40,12 +41,23 @@ export default async function handler(req, res) {
      back the same way a room does, and throws it away. No real connection is touched and
      nothing secret comes back out. */
   if (ws === '__selftest') {
+    /* Oct 5 2026 — and is the lane key actually in this build? Setting it on the project is
+       not enough: a Vercel function only sees an environment variable from the deployment it
+       was built with, so a key set after the last deploy is a key the posting doors do not
+       have. That cost one quiet cron run. Now it can be asked. Nothing is revealed to anyone
+       who does not already hold the key, and it answers only here. */
+    const laneSet = !!String(process.env.BP_LANE_KEY || '').trim();
+    const laneOk = !!gate({ headers: req.headers || {}, query: {} });
     const d = await vaultWhy();
     const steps = d.steps || [];
     const saved = steps.some((x) => x.step === 'save' && x.ok);
     const readBack = steps.some((x) => x.step === 'peek' && x.matched);
     return res.status(200).json({
       ok: true, selftest: true, wrote: saved, roundTrip: readBack, detail: readBack ? null : d,
+      laneKeySet: laneSet, laneKeyAccepted: laneOk,
+      lane: !laneSet ? 'BP_LANE_KEY is not in this build. The drainer cannot post until it is.'
+          : laneOk ? 'The lane key in this build matches the one you sent.'
+          : 'BP_LANE_KEY is in this build. You did not send a matching one, which is the right answer to a stranger.',
       verdict: readBack ? 'The vault writes and reads. A connection made now will be seen everywhere.'
              : saved ? 'It wrote but could not read it back. Connections would not survive.'
              : 'It could not write. Connections would still only live in the browser that made them.'
