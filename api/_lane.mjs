@@ -64,11 +64,16 @@ export function gate(req) {
     else if (c.bp_fb || c.bp_tt) out = { via: 'legacy', ws: '' };
   }
 
-  if (!req.query || typeof req.query !== 'object') { try { req.query = {}; } catch (e) {} }
-  if (req.query && typeof req.query === 'object') {
+  /* The rewrite is the whole safety property, not a convenience: if the query cannot be
+     overwritten then wsOf() downstream would read the caller's own ?ws= again and the hole
+     would be back. So it fails closed. This runs fine on Vercel today — proved live before
+     this was written — and if the runtime ever changes, posting stops instead of opening. */
+  try {
+    if (!req.query || typeof req.query !== 'object') req.query = {};
     req.query.ws = out ? out.ws : '';
     delete req.query.workspace;
-  }
+    if (req.query.ws !== (out ? out.ws : '')) return null;
+  } catch (e) { return null; }
   return out;
 }
 
