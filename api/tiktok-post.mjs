@@ -1,4 +1,5 @@
 import { getToken } from './_tt.mjs';
+import { gate, notAllowed } from './_lane.mjs';
 
 export const config = { api: { bodyParser: false } };
 
@@ -19,6 +20,8 @@ function readBody(req, cap){
 export default async function handler(req, res){
   try {
     if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST only' });
+    /* Who is asking, and which workspace they are allowed to name — see _lane.mjs. */
+    if (!gate(req)) return notAllowed(res);
     const tok = await getToken(req, res);
     if (!tok) return res.status(401).json({ ok: false, error: 'not connected' });
 

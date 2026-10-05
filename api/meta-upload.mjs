@@ -7,6 +7,8 @@
 //
 // Talks to the Blob REST API with plain fetch — no npm dependency, matching the rest of
 // this codebase.
+import { gate, notAllowed } from './_lane.mjs';
+
 export const config = { api: { bodyParser: false } };
 
 const MAX_BYTES = 200 * 1024 * 1024; // Meta's Reels ceiling is 1GB but Vercel's request
@@ -25,6 +27,9 @@ async function readBody(req){
 
 export default async function handler(req, res){
   if (req.method !== 'POST') return res.status(200).json({ ok: false, error: 'POST only' });
+
+  /* This door writes into the Blob store, so it is not open to the street either. */
+  if (!gate(req)) return notAllowed(res);
 
   const token = process.env.BLOB_READ_WRITE_TOKEN;
   if (!token) {

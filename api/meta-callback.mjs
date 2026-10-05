@@ -42,10 +42,14 @@ export default async function handler(req, res){
     const tok = { at, exp_at: Date.now() + ttl, targets };
     /* The vault first, then the cookie — same reasoning as the TikTok callback. */
     if (ws) await keepToken(ws, tok);
+    /* Oct 5 2026 — the workspace this browser just connected, kept as its own cookie for
+       sixty days. It is what lets this browser go on naming that workspace after the gate
+       in _lane.mjs stopped trusting ?ws= from the street: the cookie is the proof. It
+       carries no secret, only a name. */
     res.setHeader('Set-Cookie', [
       tokenCookie(tok),
       'bp_fb_state=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax'
-    ]);
+    ].concat(ws ? ['bp_ws=' + encodeURIComponent(ws) + '; Max-Age=' + (60 * 24 * 3600) + '; Path=/; HttpOnly; Secure; SameSite=Lax'] : []));
 
     const first = targets[0];
     return back(res, {
