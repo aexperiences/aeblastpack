@@ -47,7 +47,9 @@ export default async function handler(req, res) {
        have. That cost one quiet cron run. Now it can be asked. Nothing is revealed to anyone
        who does not already hold the key, and it answers only here. */
     const laneSet = !!String(process.env.BP_LANE_KEY || '').trim();
-    const laneOk = !!gate({ headers: req.headers || {}, query: {} });
+    /* gate() refuses a lane caller that names no workspace, so the check has to name one.
+       Nothing is posted here; the name is only there for the gate to hand back. */
+    const laneOk = !!gate({ headers: req.headers || {}, query: { ws: '__selftest' } });
     const d = await vaultWhy();
     const steps = d.steps || [];
     const saved = steps.some((x) => x.step === 'save' && x.ok);
