@@ -41,7 +41,7 @@ Before touching anything, load these in order. They are not optional; skipping t
 
 **Origin:** Anthony's wife **Jessica** runs a TikTok account — *"So you wanna be a Home Health Nurse?"* She wanted her TikToks to land on the other platforms without redoing the work. That's the whole seed. She is the acceptance test for this product; if it doesn't work for her, it doesn't ship.
 
-**Positioning:** standalone product first, sold in the AE App Shop (SSOT Art. IX.3 — the store is the front door, never a landing page). Then an additive room in AE OS so Barry and the AE social team can run client accounts from the hub.
+**Positioning:** standalone product first, sold in the store — Application Systems or Accelerated Operating Systems (SSOT Art. IX.3 — the store is the front door, never a landing page). Then an additive room in AE OS so Barry and the AE social team can run client accounts from the hub.
 
 ### The market research that shaped it
 ~47 competing tools were reviewed (Buffer, Later, Hootsuite, Publer, Postiz, Blotato, Metricool, Repurpose.io, SocialBee, Vista Social, Sprout, Loomly, Planable, OneUp, Post Planner, Sendible, ContentStudio, Hypefury, post-bridge, Upload-Post, bundle.social, Ayrshare, Mixpost, Repostify, and others), plus G2, Capterra, Trustpilot and App Store review corpora.
@@ -306,7 +306,7 @@ All 18 milestones are already on the hub calendar under `dept:Production`, `tag:
 9. **⭐ THE WEDGE — the failure alarm.** Push + email; SMS opt-in. Plus token-expiry warnings 3 days out. **This is the entire differentiator. Do not let it slip to v2.**
 
 ### Then — commerce and reach
-10. **AE App Shop listing** — store, not a landing page. Build the full purchase path; **Stripe stays OFF until Anthony personally says go.**
+10. **Store listing** — store, not a landing page. Build the full purchase path; **Stripe stays OFF until Anthony personally says go.**
 11. **Hub room** in AE OS for Barry and the social team — one workspace per client.
 12. **Full Apple + Google icon kit** → `aehub/brand/blastpack/` per `ae-app-icon-standard`.
 13. **Jessica beta** — one real week of real posts. **Gated on the TikTok audit.**
