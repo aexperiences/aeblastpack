@@ -9,6 +9,17 @@
 import { getToken, graph, bad, targetsFor } from './_meta.mjs';
 import { gate, notAllowed } from './_lane.mjs';
 
+/* The home Page of each workspace, by name as Facebook spells it. BP_HOME_PAGES in Vercel can
+   override or add, as "ws=Page Name;ws2=Other Page". */
+const HOME_PAGES = { nd: 'The Neurodivergent Family', anthony: 'Accelerated Experiences' };
+export function homePageFor(req){
+  const ws = String((req.query && req.query.ws) || new URL(req.url || '/', 'http://x').searchParams.get('ws') || '').trim().toLowerCase();
+  const env = String(process.env.BP_HOME_PAGES || '');
+  const map = Object.assign({}, HOME_PAGES);
+  env.split(';').forEach(p => { const i = p.indexOf('='); if (i > 0) map[p.slice(0, i).trim().toLowerCase()] = p.slice(i + 1).trim(); });
+  return map[ws] || '';
+}
+
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function postPageVideo({ pageId, pageToken, videoUrl, caption }){
@@ -154,8 +165,19 @@ export default async function handler(req, res){
 
   // Pages are resolved live, not read from the cookie — see tokenCookie() in _meta.mjs.
   const all = await targetsFor(tok);
-  const target = all.find(t => !pageId || t.pageId === pageId) || all[0];
-  if (!target) return bad(res, 'no_target', 'No Page available on this connection.');
+  /* WHICH PAGE. Oct 29 2026. The connection is Anthony's Facebook login, which manages a dozen
+     Pages, and with no pageId this door took the FIRST one — ESPO Music. Jessica's first post
+     would have landed on the wrong Page. Each workspace now has a home Page by name; a pageId
+     in the request still wins; and if the named Page is not on the connection the door says
+     so instead of guessing. The queue was empty when this was found, so nothing went wrong. */
+  const want = String(pageId || '').trim() || homePageFor(req);
+  const target = want ? all.find(t => t.pageId === want || t.pageName === want) : null;
+  if (!target) {
+    const names = all.map(t => t.pageName).join(', ');
+    return bad(res, 'no_target', want
+      ? 'The Page "' + want + '" is not on this connection. It has: ' + (names || 'none') + '.'
+      : 'No Page named for this workspace. Pass pageId, or set BP_HOME_PAGES.');
+  }
 
   const results = {};
 
