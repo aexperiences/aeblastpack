@@ -27,6 +27,9 @@
 import { timingSafeEqual } from 'node:crypto';
 
 const LANE = () => String(process.env.BP_LANE_KEY || '').trim();
+/* A second machine key for AE OS's own drain (aehub, Oct 29 2026). The first one is a secret that
+   cannot be read back out of Vercel to be copied, so AE OS carries its own; same rights, same lane. */
+const LANE2 = () => String(process.env.BP_LANE_KEY_AEOS || '').trim();
 
 function same(a, b) {
   const x = Buffer.from(String(a), 'utf8'), y = Buffer.from(String(b), 'utf8');
@@ -54,7 +57,8 @@ export function gate(req) {
   let out = null;
   const key = LANE(), given = String((req && req.headers && req.headers['x-bp-lane']) || '').trim();
 
-  if (key && given && same(given, key)) {
+  const key2 = LANE2();
+  if (given && ((key && same(given, key)) || (key2 && same(given, key2)))) {
     const ws = qws(req);
     out = ws ? { via: 'lane', ws } : null;
   } else {
