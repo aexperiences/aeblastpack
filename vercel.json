@@ -19,6 +19,14 @@
     {
       "source": "/connections",
       "destination": "/api/connections"
+    },
+    {
+      "source": "/auth/youtube/start",
+      "destination": "/api/youtube-auth"
+    },
+    {
+      "source": "/auth/youtube/callback",
+      "destination": "/api/youtube-callback"
     }
   ]
 }

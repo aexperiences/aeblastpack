@@ -24,7 +24,7 @@ import { gate } from './_lane.mjs';
 const PLATFORMS = [
   { k: 'tiktok',    name: 'TikTok',    built: true },
   { k: 'meta',      name: 'Facebook and Instagram', built: true, covers: ['facebook', 'instagram'] },
-  { k: 'youtube',   name: 'YouTube',   built: false, why: 'No door built yet. Nothing here can post to YouTube.' },
+  { k: 'youtube',   name: 'YouTube',   built: true },   // Oct 29 2026 — the door is built; Google sign-in once per workspace
   { k: 'x',         name: 'X',         built: false, why: 'No door built yet, and X charges per post, so it is an add-on rather than included.' }
 ];
 
@@ -95,7 +95,9 @@ export default async function handler(req, res) {
     row.account = f.n || '';
     row.connectedAt = found.at || null;
     if (left != null) row.expiresInDays = left;
-    if (p.k === 'tiktok') {
+    if (p.k === 'youtube') {
+      row.note = 'Vertical video posts as a Short. The title is the first line of the caption.';
+    } else if (p.k === 'tiktok') {
       row.note = 'Until TikTok clears the app review, a post lands in the TikTok drafts instead of going straight out.';
     } else if (p.k === 'meta') {
       if (Array.isArray(f.t)) row.targets = f.t;
