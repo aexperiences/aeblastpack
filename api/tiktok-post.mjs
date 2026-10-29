@@ -1,7 +1,7 @@
 import { getToken } from './_tt.mjs';
 import { gate, notAllowed } from './_lane.mjs';
 
-export const config = { api: { bodyParser: false } };
+export const config = { api: { bodyParser: false }, maxDuration: 300 };
 
 function readBody(req, cap){
   return new Promise((resolve, reject) => {
@@ -25,9 +25,33 @@ export default async function handler(req, res){
     const tok = await getToken(req, res);
     if (!tok) return res.status(401).json({ ok: false, error: 'not connected' });
 
-    const caption = String(req.query.caption || '').slice(0, 2200);
-    const video = await readBody(req, 4 * 1024 * 1024);
-    if (!video.length) return res.status(400).json({ ok: false, error: 'no video bytes' });
+    /* TWO WAYS IN (Oct 29 2026). The phone app still pours raw bytes in (small, demo-sized).
+       The drains send JSON { mediaUrl, caption }: the file is fetched from its public address
+       and uploaded to TikTok in chunks, so a real phone video (hundreds of megabytes) goes
+       through without ever touching a request body. */
+    let caption = String(req.query.caption || '').slice(0, 2200);
+    let video, ctype = req.headers['content-type'] || 'video/mp4';
+    if (/application\/json/i.test(String(req.headers['content-type'] || ''))) {
+      let b = {}; try { b = JSON.parse((await readBody(req, 1024 * 1024)).toString('utf8') || '{}'); } catch {}
+      const mediaUrl = String(b.videoUrl || b.mediaUrl || b.media || '').trim();
+      if (!/^https:\/\//.test(mediaUrl)) return res.status(200).json({ ok: false, code: 'bad_media_url', error: 'A video has to sit at a public https URL.' });
+      if (b.caption) caption = String(b.caption).slice(0, 2200);
+      const src = await fetch(mediaUrl, { redirect: 'follow' });
+      if (!src.ok) return res.status(200).json({ ok: false, code: 'bad_media_url', error: 'The file could not be fetched (' + src.status + ').' });
+      ctype = String(src.headers.get('content-type') || 'video/mp4').split(';')[0];
+      const MAX = 500 * 1024 * 1024;
+      const buf = Buffer.from(await src.arrayBuffer());
+      if (buf.length > MAX) return res.status(200).json({ ok: false, code: 'too_large', error: 'TikTok through here takes up to five hundred megabytes.' });
+      video = buf;
+    } else {
+      video = await readBody(req, 4 * 1024 * 1024);
+    }
+    if (!video || !video.length) return res.status(400).json({ ok: false, error: 'no video bytes' });
+
+    /* TikTok's chunking rule: one chunk if the file is under sixty-four megabytes; otherwise
+       chunks of thirty-two megabytes, the last one carrying the remainder. */
+    const CHUNK = video.length <= 64 * 1024 * 1024 ? video.length : 32 * 1024 * 1024;
+    const chunks = Math.max(1, Math.floor(video.length / CHUNK));
 
     // 1. creator_info — required step; also gives allowed privacy levels
     const ci = await fetch('https://open.tiktokapis.com/v2/post/publish/creator_info/query/', {
@@ -52,8 +76,8 @@ export default async function handler(req, res){
         source_info: {
           source: 'FILE_UPLOAD',
           video_size: video.length,
-          chunk_size: video.length,
-          total_chunk_count: 1
+          chunk_size: CHUNK,
+          total_chunk_count: chunks
         }
       })
     }).then(r => r.json());
@@ -71,8 +95,8 @@ export default async function handler(req, res){
           source_info: {
             source: 'FILE_UPLOAD',
             video_size: video.length,
-            chunk_size: video.length,
-            total_chunk_count: 1
+            chunk_size: CHUNK,
+            total_chunk_count: chunks
           }
         })
       }).then(r => r.json());
@@ -88,20 +112,22 @@ export default async function handler(req, res){
     }
     const init2 = { data: initData };
 
-    // 3. upload the bytes
-    const up = await fetch(init2.data.upload_url, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': req.headers['content-type'] || 'video/mp4',
-        'Content-Range': `bytes 0-${video.length - 1}/${video.length}`
-      },
-      body: video
-    });
-    if (!up.ok && up.status !== 201) {
-      return res.status(200).json({ ok: false, error: 'upload failed: HTTP ' + up.status });
+    // 3. upload the bytes, chunk by chunk (the last chunk takes the remainder)
+    for (let i = 0; i < chunks; i++) {
+      const start = i * CHUNK;
+      const end = i === chunks - 1 ? video.length - 1 : start + CHUNK - 1;
+      const up = await fetch(init2.data.upload_url, {
+        method: 'PUT',
+        headers: { 'Content-Type': ctype, 'Content-Range': `bytes ${start}-${end}/${video.length}` },
+        body: video.subarray(start, end + 1)
+      });
+      if (!up.ok && up.status !== 201 && up.status !== 206) {
+        return res.status(200).json({ ok: false, error: 'upload failed on chunk ' + (i + 1) + ' of ' + chunks + ': HTTP ' + up.status });
+      }
     }
 
-    res.status(200).json({ ok: true, publish_id: init2.data.publish_id, privacy, mode });
+    res.status(200).json({ ok: true, publish_id: init2.data.publish_id, privacy, mode,
+      results: { tiktok: { ok: true, mode, note: mode === 'draft' ? 'Landed in the TikTok drafts (app review not cleared yet) — open TikTok and post it from there.' : 'Posted.' } } });
   } catch (e) {
     res.status(200).json({ ok: false, error: e.message });
   }
