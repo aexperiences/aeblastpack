@@ -711,9 +711,14 @@ function setPostResult(postId,pid,val){
 }
 function realTikTokPost(postId,file,caption,choices){
   if(!file){ setPostResult(postId,'tiktok','failed'); toast('TikTok: the video left memory — pick it again.'); return; }
-  if(file.size>4*1024*1024){ setPostResult(postId,'tiktok','failed'); toast('TikTok demo pipeline caps at 4 MB for now.'); return; }
-  fetch(bpBase()+'api/tiktok-post?'+wsq()+'&caption='+encodeURIComponent(caption||'')+(choices||''),
-        {method:'POST',headers:{'Content-Type':file.type||'video/mp4'},body:file})
+  /* Oct 30 2026 — the 4 MB cap is gone. The file goes straight from this browser to Blob
+     (stageFile), and TikTok's door fetches it from there, so size no longer hits the
+     function body limit. */
+  stageFile(file)
+  .then(function(url){
+    return fetch(bpBase()+'api/tiktok-post?'+wsq()+(choices||''),
+      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mediaUrl:url,caption:caption||''})});
+  })
   .then(function(r){return r.json();})
   .then(function(j){
     if(!j.ok) throw new Error(j.error||'post failed');
@@ -824,6 +829,28 @@ function sheetMetaPage(){
   });
 }
 
+/* ---------------- staging (Oct 30 2026) ----------------
+   Puts the video at a public address so every platform can fetch it. The browser uploads
+   straight to Blob with a fifteen-minute pass from api/blob-token, in parts, so a full phone
+   video never passes through a function body (Vercel refuses bodies over about 4.5 MB).
+   One staging per file per page load: TikTok and Facebook in the same blast share it. */
+var _staged=typeof WeakMap!=='undefined'?new WeakMap():null;
+function stageFile(file){
+  if(_staged&&_staged.has(file)) return _staged.get(file);
+  var type=file.type||'video/mp4';
+  var p=fetch(bpBase()+'api/blob-token?'+wsq()+'&type='+encodeURIComponent(type),{method:'POST'})
+  .then(function(r){return r.json();})
+  .then(function(t){
+    if(!t.ok) throw new Error(t.error||'could not get an upload pass');
+    return import('https://esm.sh/@vercel/blob@2.8.0/client').then(function(m){
+      return m.put(t.pathname,file,{access:'public',token:t.token,contentType:type,multipart:file.size>8*1024*1024});
+    });
+  })
+  .then(function(b){ if(!b||!b.url) throw new Error('upload did not finish'); return b.url; });
+  if(_staged){ _staged.set(file,p); p.catch(function(){ _staged.delete(file); }); }
+  return p;
+}
+
 /* ---------------- real Meta pipeline (Facebook Page + Instagram Reels) ----------------
    Meta will not take an upload: it fetches video_url itself. So the file is staged to a
    public URL first, then handed over. One stage, both destinations.                     */
@@ -832,13 +859,11 @@ function realMetaPost(postId,file,caption,targets){
     targets.forEach(function(t){ setPostResult(postId,t,'failed'); });
     toast('Meta: the video left memory — pick it again.'); return;
   }
-  fetch(bpBase()+'api/meta-upload?'+wsq(),{method:'POST',headers:{'Content-Type':file.type||'video/mp4'},body:file})
-  .then(function(r){return r.json();})
-  .then(function(u){
-    if(!u.ok) throw new Error(u.error||'staging failed');
+  stageFile(file)
+  .then(function(url){
     return fetch(bpBase()+'api/meta-post?'+wsq(),{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({videoUrl:u.url,caption:caption||'',targets:targets,pageId:(ws().connections.facebook||{}).pageId||null})
+      body:JSON.stringify({videoUrl:url,caption:caption||'',targets:targets,pageId:(ws().connections.facebook||{}).pageId||null})
     }).then(function(r){return r.json();});
   })
   .then(function(j){
