@@ -28,5 +28,16 @@
       "source": "/auth/youtube/callback",
       "destination": "/api/youtube-callback"
     }
+  ],
+  "headers": [
+    {
+      "source": "/icon-1024.png",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    }
   ]
 }
