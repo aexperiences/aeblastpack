@@ -709,10 +709,10 @@ function setPostResult(postId,pid,val){
   var rec=ws().posts.filter(function(x){return x.id===postId;})[0];
   if(rec){ rec.results[pid]=val; save(); if(route==='queue') render(); }
 }
-function realTikTokPost(postId,file,caption){
+function realTikTokPost(postId,file,caption,choices){
   if(!file){ setPostResult(postId,'tiktok','failed'); toast('TikTok: the video left memory — pick it again.'); return; }
   if(file.size>4*1024*1024){ setPostResult(postId,'tiktok','failed'); toast('TikTok demo pipeline caps at 4 MB for now.'); return; }
-  fetch(bpBase()+'api/tiktok-post?'+wsq()+'&caption='+encodeURIComponent(caption||''),
+  fetch(bpBase()+'api/tiktok-post?'+wsq()+'&caption='+encodeURIComponent(caption||'')+(choices||''),
         {method:'POST',headers:{'Content-Type':file.type||'video/mp4'},body:file})
   .then(function(r){return r.json();})
   .then(function(j){
@@ -857,23 +857,84 @@ function realMetaPost(postId,file,caption,targets){
 }
 
 /* ---------------- blast ---------------- */
+/* ---------------- TikTok posting settings (Oct 30 2026) ----------------
+   TikTok's Direct Post rules: show whose account it posts to, let the creator choose who can
+   see it (no preset), choose comments / duet / stitch, disclose commercial content, and show
+   the Music Usage Confirmation before posting. Every option comes from TikTok's own answer. */
+var tt=null, TT_LABEL={PUBLIC_TO_EVERYONE:'Everyone',MUTUAL_FOLLOW_FRIENDS:'Friends',FOLLOWER_OF_CREATOR:'Followers',SELF_ONLY:'Only me'};
+function ttLoad(){
+  fetch(bpBase()+'api/tiktok-creator?'+wsq()).then(function(r){return r.json();}).then(function(j){
+    var box=sheet.querySelector('#ttbox'); if(!box) return;
+    if(!j.ok){ box.innerHTML='<p class="tiny" style="color:#c0392b">TikTok would not give the posting settings ('+esc(j.error||'no answer')+'). Reconnect TikTok and try again.</p>'; return; }
+    tt=j;
+    var opts=j.privacy.map(function(v){return '<option value="'+v+'">'+esc(TT_LABEL[v]||v)+'</option>';}).join('');
+    function cb(id,lab,off){ return '<label class="row tiny" style="margin:6px 0'+(off?';opacity:.45':'')+'"><input type="checkbox" id="'+id+'"'+(off?' disabled':'')+'> '+lab+(off?' <span class="mut">(turned off in your TikTok settings)</span>':'')+'</label>'; }
+    box.innerHTML='<div class="row" style="gap:9px;margin-bottom:8px">'+(j.avatar?'<img src="'+esc(j.avatar)+'" alt="" style="width:32px;height:32px;border-radius:99px">':'')
+      +'<span><b>TikTok</b><br><span class="tiny mut">Posting to '+esc(j.nickname||j.username||'your TikTok')+(j.username?' (@'+esc(j.username)+')':'')+'</span></span></div>'
+      +'<label class="lab" for="ttpriv">WHO CAN SEE THIS VIDEO</label>'
+      +'<select id="ttpriv" style="width:100%;padding:11px;border-radius:12px;border:1.5px solid var(--sm-line);font:inherit;background:var(--sm-bg);color:var(--sm-ink)"><option value="">Choose who can see it</option>'+opts+'</select>'
+      +'<p class="lab" style="margin-top:12px">LET VIEWERS</p>'
+      +cb('ttcom','Comment',j.commentOff)+cb('ttduet','Duet',j.duetOff)+cb('ttstitch','Stitch',j.stitchOff)
+      +'<label class="row tiny" style="margin:12px 0 4px"><input type="checkbox" id="ttdisc"> <b>Disclose video content</b> &mdash; this video promotes a brand, product or service</label>'
+      +'<div id="ttdiscbox" class="hide" style="padding-left:22px">'
+      +'<label class="row tiny" style="margin:6px 0"><input type="checkbox" id="ttyours"> Your brand &mdash; promoting yourself or your own business</label>'
+      +'<label class="row tiny" style="margin:6px 0"><input type="checkbox" id="ttbrand"> Branded content &mdash; promoting someone else in exchange for something</label>'
+      +'<p class="tiny mut" id="ttdiscnote"></p></div>'
+      +(j.maxSeconds?'<p class="tiny mut">TikTok takes videos up to '+j.maxSeconds+' seconds on this account.</p>':'')
+      +'<p class="tiny mut" id="ttconsent" style="margin-top:8px"></p>';
+    ttCheck();
+  }).catch(function(){ var box=sheet.querySelector('#ttbox'); if(box) box.innerHTML='<p class="tiny" style="color:#c0392b">Could not reach TikTok. Check the connection and try again.</p>'; });
+}
+function ttCheck(){
+  var go=sheet.querySelector('#bgo'); if(!tt){ if(go) go.disabled=true; return false; }
+  var q=function(id){return sheet.querySelector('#'+id);};
+  var priv=q('ttpriv').value, disc=q('ttdisc').checked, yours=q('ttyours').checked, brand=q('ttbrand').checked;
+  q('ttdiscbox').classList.toggle('hide',!disc);
+  // Branded content may not be private; take "Only me" away while it is ticked.
+  [].forEach.call(q('ttpriv').options,function(o){ if(o.value==='SELF_ONLY'){ o.disabled=brand; } });
+  if(brand && priv==='SELF_ONLY'){ q('ttpriv').value=''; priv=''; }
+  var note='';
+  if(disc && !yours && !brand) note='Pick at least one, or switch disclosure off.';
+  else if(brand) note='Your video will be labeled "Paid partnership".';
+  else if(yours) note='Your video will be labeled "Promotional content".';
+  q('ttdiscnote').textContent=note;
+  q('ttconsent').innerHTML='By posting, you agree to TikTok’s '+(brand?'<a href="https://www.tiktok.com/legal/page/global/bc-policy/en" target="_blank" rel="noopener">Branded Content Policy</a> and ':'')
+    +'<a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en" target="_blank" rel="noopener">Music Usage Confirmation</a>.';
+  var ok = !!priv && !(disc && !yours && !brand);
+  if(go) go.disabled=!ok;
+  return ok;
+}
+function ttChoices(){
+  if(!tt) return '';
+  var q=function(id){return sheet.querySelector('#'+id);}, disc=q('ttdisc').checked;
+  return '&privacy='+encodeURIComponent(q('ttpriv').value)+'&comment='+(q('ttcom').checked?1:0)+'&duet='+(q('ttduet').checked?1:0)
+    +'&stitch='+(q('ttstitch').checked?1:0)+'&brand_organic='+(disc&&q('ttyours').checked?1:0)+'&brand_content='+(disc&&q('ttbrand').checked?1:0);
+}
 function blast(){
   var w=ws();
   var picked=PLATFORMS.filter(function(p){return draft.dests[p.id]&&w.connections[p.id].connected;});
   if(!picked.length||!draft.url) return;
+  var ttPick = picked.some(function(p){return p.id==='tiktok';}) && !!(w.connections.tiktok&&w.connections.tiktok.real);
+  tt=null;
   var h='<h3>Post as '+esc(w.name)+'?</h3>'
     +'<div class="wsrow" style="pointer-events:none">'+avatar(w,'wsdot','width:48px;height:48px;font-size:17px')
     +'<span><span class="nm" style="font-size:19px">'+esc(w.name)+'</span><br><span class="sub">'+picked.length+' destinations</span></span></div>'
     +'<p class="lede" style="margin-top:12px">'+picked.map(function(p){return p.name;}).join(' &middot; ')+'</p>'
-    +'<button class="btn" id="bgo">Yes &mdash; blast it</button>'
+    +(ttPick?'<div class="card" id="ttbox" style="margin:12px 0"><p class="mut tiny">Asking TikTok for your posting settings&hellip;</p></div>':'')
+    +'<button class="btn" id="bgo"'+(ttPick?' disabled':'')+'>Yes &mdash; blast it</button>'
     +'<button class="btn ghost" data-act="closesheet" style="margin-top:8px">Cancel</button>'
     +'<p class="note">Confirming is required by TikTok before anything is published, and it is also how you make sure you are in the right profile.</p>';
   openSheet(h);
+  if(ttPick) ttLoad();
+  sheet.onchange=function(){ if(ttPick) ttCheck(); };
   sheet.onclick=function(e){
     if(e.target.closest('[data-act=closesheet]')) return closeSheet();
+    if(e.target.closest('#ttdisc')){ ttCheck(); return; }
     if(!e.target.closest('#bgo')) return;
+    if(ttPick && !ttCheck()) return;
+    var ttq = ttPick ? ttChoices() : '';
     closeSheet();
-    var post={id:uid(),at:Date.now(),caption:draft.caption,results:{}};
+    var post={id:uid(),at:Date.now(),caption:draft.caption,results:{},ttq:ttq};
     picked.forEach(function(p){ post.results[p.id]='sending'; });
     w.posts.push(post); save(); route='queue'; render();
     var ttLive = picked.some(function(p){return p.id==='tiktok';}) && !!(w.connections.tiktok&&w.connections.tiktok.real);
@@ -884,7 +945,7 @@ function blast(){
     var sim=picked.filter(function(p){
       return !(p.id==='tiktok'&&ttLive) && metaLive.indexOf(p.id)===-1;
     });
-    if(ttLive) realTikTokPost(post.id,f0,cap0);
+    if(ttLive) realTikTokPost(post.id,f0,cap0,ttq);
     if(metaLive.length){
       var capM=(draft.overrides.facebook!=null&&draft.overrides.facebook!==''?draft.overrides.facebook:draft.caption);
       realMetaPost(post.id,f0,capM,metaLive);
@@ -915,7 +976,7 @@ function retry(postId,pid){
     }
     rec.results[pid]='sending'; save(); render();
     if(pid==='tiktok'){
-      realTikTokPost(postId, draft.file, (draft.overrides.tiktok!=null&&draft.overrides.tiktok!==''?draft.overrides.tiktok:rec.caption));
+      realTikTokPost(postId, draft.file, (draft.overrides.tiktok!=null&&draft.overrides.tiktok!==''?draft.overrides.tiktok:rec.caption), rec.ttq||'');
     } else {
       realMetaPost(postId, draft.file, (draft.overrides[pid]!=null&&draft.overrides[pid]!==''?draft.overrides[pid]:rec.caption), [pid]);
     }

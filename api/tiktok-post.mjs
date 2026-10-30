@@ -30,12 +30,17 @@ export default async function handler(req, res){
        and uploaded to TikTok in chunks, so a real phone video (hundreds of megabytes) goes
        through without ever touching a request body. */
     let caption = String(req.query.caption || '').slice(0, 2200);
+    /* The creator's own choices from the confirm sheet (TikTok Direct Post rules, Oct 30 2026):
+       who can see it, comments / duet / stitch, and the commercial-content disclosure. */
+    let ch = { privacy: req.query.privacy, comment: req.query.comment, duet: req.query.duet, stitch: req.query.stitch,
+               brandOrganic: req.query.brand_organic, brandContent: req.query.brand_content };
     let video, ctype = req.headers['content-type'] || 'video/mp4';
     if (/application\/json/i.test(String(req.headers['content-type'] || ''))) {
       let b = {}; try { b = JSON.parse((await readBody(req, 1024 * 1024)).toString('utf8') || '{}'); } catch {}
       const mediaUrl = String(b.videoUrl || b.mediaUrl || b.media || '').trim();
       if (!/^https:\/\//.test(mediaUrl)) return res.status(200).json({ ok: false, code: 'bad_media_url', error: 'A video has to sit at a public https URL.' });
       if (b.caption) caption = String(b.caption).slice(0, 2200);
+      if (b.tiktok && typeof b.tiktok === 'object') ch = Object.assign(ch, b.tiktok);
       const src = await fetch(mediaUrl, { redirect: 'follow' });
       if (!src.ok) return res.status(200).json({ ok: false, code: 'bad_media_url', error: 'The file could not be fetched (' + src.status + ').' });
       ctype = String(src.headers.get('content-type') || 'video/mp4').split(';')[0];
@@ -59,7 +64,17 @@ export default async function handler(req, res){
       headers: { Authorization: 'Bearer ' + tok.at, 'Content-Type': 'application/json' }
     }).then(r => r.json());
     const cd = ci.data || {};
-    const privacy = (cd.privacy_level_options || ['SELF_ONLY'])[0];
+    const opts = cd.privacy_level_options || ['SELF_ONLY'];
+    const yes = (v) => v === true || v === '1' || v === 'true';
+    const chose = ch.privacy && opts.includes(String(ch.privacy));
+    const privacy = chose ? String(ch.privacy) : opts[0];
+    const brandContent = yes(ch.brandContent), brandOrganic = yes(ch.brandOrganic);
+    if (brandContent && privacy === 'SELF_ONLY') {
+      return res.status(200).json({ ok: false, code: 'branded_private', error: 'Branded content cannot be posted as Only me. Pick another audience.' });
+    }
+    /* A setting the creator turned off on TikTok stays off; otherwise it follows her pick on the
+       confirm sheet. A post that came from the queue without picks keeps TikTok's own settings. */
+    const off = (name, disabled) => disabled || (ch[name] != null ? !yes(ch[name]) : false);
 
     // 2. init direct post (FILE_UPLOAD, single chunk)
     const init = await fetch('https://open.tiktokapis.com/v2/post/publish/video/init/', {
@@ -69,9 +84,11 @@ export default async function handler(req, res){
         post_info: {
           title: caption,
           privacy_level: privacy,
-          disable_duet: !!cd.duet_disabled,
-          disable_comment: !!cd.comment_disabled,
-          disable_stitch: !!cd.stitch_disabled
+          disable_duet: off('duet', !!cd.duet_disabled),
+          disable_comment: off('comment', !!cd.comment_disabled),
+          disable_stitch: off('stitch', !!cd.stitch_disabled),
+          brand_content_toggle: brandContent,
+          brand_organic_toggle: brandOrganic
         },
         source_info: {
           source: 'FILE_UPLOAD',
